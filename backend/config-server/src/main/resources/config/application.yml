@@ -1,0 +1,101 @@
+
+spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+saga:
+  rabbit:
+    exchange: order.saga.exchange
+    queues:
+      stockReserveRequested: order.saga.stock.reserve.requested.queue
+      stockReserved: order.saga.stock.reserved.queue
+      stockRejected: order.saga.stock.rejected.queue
+      paymentCompleted: order.saga.payment.completed.queue
+      paymentFailed: order.saga.payment.failed.queue
+      orderCompleted: order.saga.order.completed.queue
+      orderCancelled: order.saga.order.cancelled.queue
+    routingKeys:
+      stockReserveRequested: order.stock.reserve.requested
+      stockReserved: order.stock.reserved
+      stockRejected: order.stock.rejected
+      paymentCompleted: order.payment.completed
+      paymentFailed: order.payment.failed
+      orderCompleted: order.completed
+      orderCancelled: order.cancelled
+    dlx: order.saga.dlx
+    dlq: order.saga.dlq
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+    instances:
+      iyzico:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        slowCallDurationThreshold: 5s
+        slowCallRateThreshold: 80
+  retry:
+    configs:
+      default:
+        maxAttempts: 3
+        waitDuration: 1s
+        retryExceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.io.IOException
+
+
+logging:
+  level:
+    com.n11bootcamp: ${APP_LOG_LEVEL:INFO}
+    org.springframework.amqp: WARN
+    org.hibernate.SQL: ${SQL_LOG_LEVEL:INFO}
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n"
