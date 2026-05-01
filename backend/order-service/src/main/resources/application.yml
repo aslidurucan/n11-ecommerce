@@ -1,0 +1,58 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: order-service
+  config:
+    import: optional:configserver:${CONFIG_URI:http://localhost:8762}
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5433/orderdb}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Schema'yı Flyway yönetiyor
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        format_sql: true
+    show-sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}
+          jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}/protocol/openid-connect/certs
+
+# Mock payment — true: her zaman başarılı, false: gerçek Iyzico
+payment:
+  mock: false
+
+# Iyzico — Anahtarları .env dosyasından veya ortam değişkenlerinden oku
+# Yerel geliştirme için: proje kökündeki .env dosyasına ekle (örnek için .env.example'a bak)
+iyzico:
+  api-key: ${IYZICO_API_KEY}
+  secret-key: ${IYZICO_SECRET_KEY}
+  base-url: ${IYZICO_BASE_URL:https://sandbox-api.iyzipay.com}
+
+# Outbox publisher
+outbox:
+  publisher:
+    fixed-delay-ms: 2000
+
+# OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
