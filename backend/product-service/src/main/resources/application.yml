@@ -1,0 +1,43 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: product-service
+  config:
+    import: optional:configserver:${CONFIG_URI:http://localhost:8762}
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5433/productdb}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+    show-sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}
+          jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}/protocol/openid-connect/certs
+
+# Redis cache TTL
+spring.cache.redis.time-to-live: 600000  # 10 dakika (ms)
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
