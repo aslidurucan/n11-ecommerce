@@ -1,4 +1,4 @@
-package com.n11bootcamp.order.exception;
+package com.n11bootcamp.common.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,6 +8,8 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.net.URI;
 import java.time.Instant;
@@ -45,7 +47,7 @@ public abstract class BaseExceptionHandler {
                 .collect(Collectors.toMap(
                         fe -> fe.getField(),
                         fe -> fe.getDefaultMessage() == null ? "invalid" : fe.getDefaultMessage(),
-                        (first, second) -> first  // aynı alan için birden fazla hata → ilkini al
+                        (first, second) -> first
                 ));
 
         ProblemDetail pd = problemDetail(HttpStatus.BAD_REQUEST, "Validation failed", "validation-error");
@@ -53,6 +55,12 @@ public abstract class BaseExceptionHandler {
         return pd;
     }
 
+    @ExceptionHandler({AuthorizationDeniedException.class, AccessDeniedException.class})
+    public ProblemDetail handleAuthorizationDenied(Exception ex) {
+        log.warn("Authorization denied: {}", ex.getMessage());
+        return problemDetail(HttpStatus.FORBIDDEN,
+                "Bu işlem için yetkiniz yok.", "forbidden");
+    }
 
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneral(Exception ex) {
@@ -71,7 +79,6 @@ public abstract class BaseExceptionHandler {
                 pd.setProperty("cause", ex.getCause().getMessage());
             }
         }
-
         return pd;
     }
 }

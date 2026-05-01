@@ -41,3 +41,6 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+app:
+  exception:
+    verbose: ${EXCEPTION_VERBOSE:false}

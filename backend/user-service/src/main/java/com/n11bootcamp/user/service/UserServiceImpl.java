@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class UserServiceImpl implements UserService {
 
-    private final IdentityProviderService identityProvider;  // interface — DIP
+    private final IdentityProviderService identityProvider;
     private final UserProfileRepository profileRepository;
 
     @Override
@@ -27,10 +27,10 @@ public class UserServiceImpl implements UserService {
         UserProfile savedProfile;
         try {
             savedProfile = profileRepository.save(
-                UserProfile.builder()
-                    .keycloakId(userId)
-                    .phone(request.phone())
-                    .build()
+                    UserProfile.builder()
+                            .keycloakId(userId)
+                            .phone(request.phone())
+                            .build()
             );
         } catch (Exception e) {
             log.error("DB save failed after Keycloak create for userId={}. Compensating.", userId, e);
@@ -40,12 +40,12 @@ public class UserServiceImpl implements UserService {
 
         log.info("User registered: userId={}", userId);
         return new UserProfileResponse(
-            userId,
-            request.firstName(),
-            request.lastName(),
-            request.email(),
-            request.phone(),
-            savedProfile.getCreatedAt()
+                userId,
+                request.firstName(),
+                request.lastName(),
+                request.email(),
+                request.phone(),
+                savedProfile.getCreatedAt()
         );
     }
 
@@ -58,31 +58,45 @@ public class UserServiceImpl implements UserService {
         String phone     = profile != null ? profile.getPhone()     : null;
         var    createdAt = profile != null ? profile.getCreatedAt() : null;
 
-        return new UserProfileResponse(userId, idUser.firstName(), idUser.lastName(), idUser.email(), phone, createdAt);
+        return new UserProfileResponse(
+                userId, idUser.firstName(), idUser.lastName(), idUser.email(), phone, createdAt);
     }
 
     @Override
     @Transactional
     public UserProfileResponse updateProfile(String userId, UpdateProfileRequest request) {
         IdentityUser existing = identityProvider.getUser(userId);
-        identityProvider.updateUser(userId, request);
 
         UserProfile profile = profileRepository.findById(userId)
-            .orElseThrow(() -> new UserNotFoundException(userId));
+                .orElseThrow(() -> new UserNotFoundException(userId));
 
-        if (request.phone() != null) {
-            profile.setPhone(request.phone());
-            profileRepository.save(profile);
+        identityProvider.updateUser(userId, request);
+
+        try {
+            if (request.phone() != null) {
+                profile.setPhone(request.phone());
+                profileRepository.save(profile);
+            }
+        } catch (Exception e) {
+            log.error("DB update failed for userId={}. Compensating Keycloak update.", userId, e);
+            tryRollbackIdentityUser(userId, existing);
+            throw new IllegalStateException("Profile update failed", e);
         }
 
+        log.info("Profile updated: userId={}", userId);
         return new UserProfileResponse(
-            userId,
-            request.firstName() != null ? request.firstName() : existing.firstName(),
-            request.lastName()  != null ? request.lastName()  : existing.lastName(),
-            request.email()     != null ? request.email()     : existing.email(),
-            profile.getPhone(),
-            profile.getCreatedAt()
+                userId,
+                coalesce(request.firstName(), existing.firstName()),
+                coalesce(request.lastName(),  existing.lastName()),
+                coalesce(request.email(),     existing.email()),
+                profile.getPhone(),
+                profile.getCreatedAt()
         );
+    }
+
+
+    private static String coalesce(String requestValue, String existingValue) {
+        return requestValue != null ? requestValue : existingValue;
     }
 
     private void tryDeleteIdentityUser(String userId) {
@@ -91,6 +105,23 @@ public class UserServiceImpl implements UserService {
             log.info("Compensation successful: Keycloak user deleted userId={}", userId);
         } catch (Exception ex) {
             log.error("Compensation FAILED for userId={}. Manual cleanup required.", userId);
+        }
+    }
+
+    private void tryRollbackIdentityUser(String userId, IdentityUser previousState) {
+        try {
+            UpdateProfileRequest rollbackRequest = new UpdateProfileRequest(
+                    previousState.firstName(),
+                    previousState.lastName(),
+                    previousState.email(),
+                    null
+            );
+            identityProvider.updateUser(userId, rollbackRequest);
+            log.info("Compensation successful: Keycloak rolled back for userId={}", userId);
+        } catch (Exception ex) {
+            log.error("Compensation FAILED for userId={}. Manual cleanup required. " +
+                            "Previous state: firstName={}, lastName={}, email={}",
+                    userId, previousState.firstName(), previousState.lastName(), previousState.email());
         }
     }
 }

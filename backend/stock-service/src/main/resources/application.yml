@@ -43,3 +43,6 @@ springdoc:
   info:
     title: Stock Service API
     version: 1.0.0
+    app:
+      exception:
+        verbose: ${EXCEPTION_VERBOSE:false}

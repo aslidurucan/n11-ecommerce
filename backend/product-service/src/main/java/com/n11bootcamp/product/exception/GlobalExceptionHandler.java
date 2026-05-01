@@ -1,5 +1,6 @@
 package com.n11bootcamp.product.exception;
 
+import com.n11bootcamp.common.exception.BaseExceptionHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
