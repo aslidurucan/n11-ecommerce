@@ -13,7 +13,7 @@ export const cartApi = {
   },
 
   updateQuantity: async (productId: number, req: UpdateQuantityRequest): Promise<CartResponse> => {
-    const res = await apiClient.put<CartResponse>(`/cart/items/${productId}`, req)
+    const res = await apiClient.patch<CartResponse>(`/cart/items/${productId}`, req)
     return res.data
   },
 
