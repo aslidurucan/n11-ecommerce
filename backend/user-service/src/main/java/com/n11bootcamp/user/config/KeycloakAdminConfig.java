@@ -10,26 +10,27 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class KeycloakAdminConfig {
 
+    private static final String ADMIN_REALM = "master";
+    private static final String ADMIN_CLI_CLIENT = "admin-cli";
+
     @Value("${keycloak.admin.server-url}")
     private String serverUrl;
 
-    @Value("${keycloak.admin.username:admin}")
+    @Value("${keycloak.admin.username}")
     private String adminUsername;
 
-    @Value("${keycloak.admin.password:admin}")
+    @Value("${keycloak.admin.password}")
     private String adminPassword;
-
-    private static final String ADMIN_REALM = "master";
 
     @Bean
     public Keycloak keycloakAdminClient() {
         return KeycloakBuilder.builder()
-            .serverUrl(serverUrl)
-            .realm(ADMIN_REALM)
-            .clientId("admin-cli")
-            .username(adminUsername)
-            .password(adminPassword)
-            .grantType(OAuth2Constants.PASSWORD)
-            .build();
+                .serverUrl(serverUrl)
+                .realm(ADMIN_REALM)
+                .clientId(ADMIN_CLI_CLIENT)
+                .username(adminUsername)
+                .password(adminPassword)
+                .grantType(OAuth2Constants.PASSWORD)
+                .build();
     }
 }

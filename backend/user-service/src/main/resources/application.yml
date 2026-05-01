@@ -29,7 +29,6 @@ spring:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}
           jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}/protocol/openid-connect/certs
 
-# Keycloak Admin Client — user-service'in Keycloak Admin API'ye erişim bilgileri
 keycloak:
   admin:
     server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8090}
@@ -43,6 +42,7 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
-    app:
-      exception:
-        verbose: ${EXCEPTION_VERBOSE:false}
+
+app:
+  exception:
+    verbose: ${EXCEPTION_VERBOSE:false}

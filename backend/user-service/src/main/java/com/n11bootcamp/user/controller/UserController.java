@@ -12,31 +12,37 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 @Tag(name = "Users", description = "Kullanıcı kayıt ve profil yönetimi")
 public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/api/users/signup")
+    @PostMapping("/signup")
     @Operation(summary = "Yeni kullanıcı kaydı — herkese açık")
     public ResponseEntity<UserProfileResponse> signup(
             @RequestBody @Valid SignupRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.signup(request));
     }
 
-    @GetMapping("/api/users/me")
+    @GetMapping("/me")
     @Operation(summary = "Kendi profilimi getir — token gerekli")
     public ResponseEntity<UserProfileResponse> getProfile(
             @AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(userService.getProfile(jwt.getSubject()));
     }
 
-    @PutMapping("/api/users/me")
-    @Operation(summary = "Kendi profilimi güncelle — token gerekli")
+    @PatchMapping("/me")
+    @Operation(summary = "Kendi profilimi kısmen güncelle — token gerekli")
     public ResponseEntity<UserProfileResponse> updateProfile(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody @Valid UpdateProfileRequest request) {

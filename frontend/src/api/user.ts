@@ -13,7 +13,7 @@ export const userApi = {
   },
 
   updateMe: async (req: UpdateProfileRequest): Promise<UserProfileResponse> => {
-    const res = await apiClient.put<UserProfileResponse>('/users/me', req)
+    const res = await apiClient.patch<UserProfileResponse>('/users/me', req)
     return res.data
   },
 }

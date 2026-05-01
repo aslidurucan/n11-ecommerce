@@ -22,8 +22,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -51,7 +51,6 @@ class UserControllerTest {
         when(userService.signup(any())).thenReturn(response);
 
         mockMvc.perform(post("/api/users/signup")
-
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -65,7 +64,6 @@ class UserControllerTest {
         SignupRequest request = new SignupRequest("Ali", "Yılmaz", null, "Sifre1234!", null);
 
         mockMvc.perform(post("/api/users/signup")
-
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -76,7 +74,6 @@ class UserControllerTest {
         SignupRequest request = new SignupRequest("Ali", "Yılmaz", "gecersiz-email", "Sifre1234!", null);
 
         mockMvc.perform(post("/api/users/signup")
-
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -87,7 +84,6 @@ class UserControllerTest {
         SignupRequest request = new SignupRequest("Ali", "Yılmaz", "ali@test.com", "kisa", null);
 
         mockMvc.perform(post("/api/users/signup")
-
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -118,9 +114,8 @@ class UserControllerTest {
 
         when(userService.updateProfile(eq("kc-uuid-123"), any())).thenReturn(response);
 
-        mockMvc.perform(put("/api/users/me")
+        mockMvc.perform(patch("/api/users/me")
                         .with(jwt().jwt(j -> j.subject("kc-uuid-123")))
-
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -131,8 +126,7 @@ class UserControllerTest {
     void updateProfile_whenNotAuthenticated_returns401() throws Exception {
         UpdateProfileRequest request = new UpdateProfileRequest("Mehmet", null, null, null);
 
-        mockMvc.perform(put("/api/users/me")
-
+        mockMvc.perform(patch("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
