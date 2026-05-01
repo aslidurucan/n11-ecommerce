@@ -1,0 +1,63 @@
+# Build outputs
+**/target/
+**/build/
+**/*.class
+**/*.jar
+**/*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Node
+node_modules/
+dist/
+.parcel-cache/
+
+# Env
+.env
+.env.local
+*.env
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+target/
+
+# Spring
+HELP.md
+
+# Test reports
+**/surefire-reports/
+**/jacoco/
+
+# Docker
+.docker-cache/
+
+# Claude Code local settings (hassas izinler içerebilir)
+.claude/
+
+# Geliştirici notları (kişisel)
+CONTINUE_HERE.md
+SESSION_NOTES.md
+PROJECT_ANALYSIS.md
+
+# Keycloak token dosyası (JWT access/refresh token içerir)
+token.json
+
+# Local env dosyaları (.env.example komit edilir, .env edilmez)
+.env
+*.env
+.env.local
+.env.*.local
