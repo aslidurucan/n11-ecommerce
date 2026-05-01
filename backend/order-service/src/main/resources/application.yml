@@ -39,7 +39,6 @@ payment:
   mock: false
 
 # Iyzico — Anahtarları .env dosyasından veya ortam değişkenlerinden oku
-# Yerel geliştirme için: proje kökündeki .env dosyasına ekle (örnek için .env.example'a bak)
 iyzico:
   api-key: ${IYZICO_API_KEY}
   secret-key: ${IYZICO_SECRET_KEY}
@@ -56,3 +55,7 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+app:
+  exception:
+    verbose: ${EXCEPTION_VERBOSE:false}

@@ -2,6 +2,7 @@ package com.n11bootcamp.order.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,10 +14,12 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
 public abstract class BaseExceptionHandler {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
+
+    @Value("${app.exception.verbose:false}")
+    private boolean verboseExceptions;
 
 
     protected ProblemDetail problemDetail(HttpStatus status, String detail, String typeKey) {
@@ -31,7 +34,7 @@ public abstract class BaseExceptionHandler {
     public ProblemDetail handleMissingHeader(MissingRequestHeaderException ex) {
         log.warn("Missing required header: {}", ex.getHeaderName());
         ProblemDetail pd = problemDetail(HttpStatus.BAD_REQUEST,
-            "Zorunlu header eksik: " + ex.getHeaderName(), "missing-header");
+                "Zorunlu header eksik: " + ex.getHeaderName(), "missing-header");
         pd.setProperty("headerName", ex.getHeaderName());
         return pd;
     }
@@ -39,11 +42,11 @@ public abstract class BaseExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
-            .collect(Collectors.toMap(
-                fe -> fe.getField(),
-                fe -> fe.getDefaultMessage() == null ? "invalid" : fe.getDefaultMessage(),
-                (first, second) -> first  // aynı alan için birden fazla hata → ilkini al
-            ));
+                .collect(Collectors.toMap(
+                        fe -> fe.getField(),
+                        fe -> fe.getDefaultMessage() == null ? "invalid" : fe.getDefaultMessage(),
+                        (first, second) -> first  // aynı alan için birden fazla hata → ilkini al
+                ));
 
         ProblemDetail pd = problemDetail(HttpStatus.BAD_REQUEST, "Validation failed", "validation-error");
         pd.setProperty("fieldErrors", fieldErrors);
@@ -54,11 +57,21 @@ public abstract class BaseExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneral(Exception ex) {
         log.error("Unhandled exception [{}]: {}", ex.getClass().getName(), ex.getMessage(), ex);
+
+        String detail = verboseExceptions
+                ? ex.getClass().getSimpleName() + ": " + ex.getMessage()
+                : "An unexpected error occurred. Please contact support if the problem persists.";
+
         ProblemDetail pd = problemDetail(HttpStatus.INTERNAL_SERVER_ERROR,
-            ex.getClass().getSimpleName() + ": " + ex.getMessage(), "internal-error");
-        // TODO: production'da kaldır — sadece debug için
-        pd.setProperty("exceptionClass", ex.getClass().getName());
-        if (ex.getCause() != null) pd.setProperty("cause", ex.getCause().getMessage());
+                detail, "internal-error");
+
+        if (verboseExceptions) {
+            pd.setProperty("exceptionClass", ex.getClass().getName());
+            if (ex.getCause() != null) {
+                pd.setProperty("cause", ex.getCause().getMessage());
+            }
+        }
+
         return pd;
     }
 }
