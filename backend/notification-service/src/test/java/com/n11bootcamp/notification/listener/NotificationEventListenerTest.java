@@ -14,11 +14,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("NotificationEventListener — mail + websocket delivery")
@@ -59,7 +59,7 @@ class NotificationEventListenerTest {
     }
 
     @Test
-    @DisplayName("Mail servisi hata fırlatırsa exception RabbitMQ'ya iletilir (retry için)")
+    @DisplayName("Mail servisi hata fırlatırsa exception RabbitMQ'ya iletilir (DLQ retry için)")
     void onOrderCompleted_whenMailFails_exceptionPropagates() {
         OrderCompletedEvent event = new OrderCompletedEvent(
                 "evt-3", 300L, "user@example.com", "user-1",
@@ -69,18 +69,19 @@ class NotificationEventListenerTest {
         doThrow(new RuntimeException("SMTP connection failed"))
                 .when(mailService).sendOrderCompleted(any(OrderCompletedEvent.class));
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> listener.onOrderCompleted(event))
+        // Mail hatası bubble up eder — RabbitMQ NACK → DLQ retry
+        assertThatThrownBy(() -> listener.onOrderCompleted(event))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("SMTP connection failed");
 
+        // Kanal izolasyonu: WS önce çağrılır (best-effort), mail sonra (kritik)
+        verify(wsService, times(1)).pushOrderCompleted(event);
         verify(mailService, times(1)).sendOrderCompleted(event);
-
-        verifyNoInteractions(wsService);
     }
 
     @Test
-    @DisplayName("WebSocket servisi hata fırlatırsa exception propagate eder")
-    void onOrderCancelled_whenWebSocketFails_exceptionPropagates() {
+    @DisplayName("WebSocket servisi hata fırlatırsa yutulur (best-effort), mail yine de gönderilir")
+    void onOrderCancelled_whenWebSocketFails_mailStillSent() {
         OrderCancelledEvent event = new OrderCancelledEvent(
                 "evt-4", 400L, "user@example.com", "user-1",
                 "Payment failed", Instant.now()
@@ -89,11 +90,11 @@ class NotificationEventListenerTest {
         doThrow(new RuntimeException("WebSocket session closed"))
                 .when(wsService).pushOrderCancelled(any(OrderCancelledEvent.class));
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> listener.onOrderCancelled(event))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("WebSocket session closed");
+        // WS hatası bubble up ETMEZ — kullanıcı zaten offline olabilir
+        // Method normal tamamlanır, mail yine de gönderilir
+        listener.onOrderCancelled(event);
 
-        verify(mailService, times(1)).sendOrderCancelled(event);
         verify(wsService, times(1)).pushOrderCancelled(event);
+        verify(mailService, times(1)).sendOrderCancelled(event);
     }
 }

@@ -2,10 +2,12 @@ package com.n11bootcamp.notification.service;
 
 import com.n11bootcamp.notification.event.OrderCancelledEvent;
 import com.n11bootcamp.notification.event.OrderCompletedEvent;
+import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,14 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
+/**
+ * Thymeleaf-based HTML mail service.
+ *
+ * <p><b>Hata yönetimi:</b> sendHtml() metodu hata durumunda exception fırlatır
+ * (önceki implementation swallow ediyordu — mail kaybı bug'ı). Caller (RabbitListener)
+ * exception görünce mesajı NACK edip DLQ'ya gönderir → Spring AMQP retry mekanizması
+ * devreye girer.</p>
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -48,6 +58,12 @@ public class ThymeleafMailService implements MailService {
             "emails/order-cancelled", ctx);
     }
 
+    /**
+     * HTML mail gönderir. Hata durumunda RuntimeException fırlatır
+     * — RabbitListener bunu görüp DLQ'ya gönderir.
+     *
+     * @throws IllegalStateException mail gönderme başarısız (SMTP, template, vs.)
+     */
     private void sendHtml(String to, String subject, String template, Context ctx) {
         try {
             String html = templateEngine.process(template, ctx);
@@ -61,8 +77,10 @@ public class ThymeleafMailService implements MailService {
             helper.setText(html, true);
             mailSender.send(message);
             log.info("Mail sent: to={}, subject={}", to, subject);
-        } catch (Exception e) {
+        } catch (MessagingException | MailException e) {
             log.error("Failed to send mail to {}: {}", to, e.getMessage(), e);
+            throw new IllegalStateException(
+                "Failed to send notification email to " + to + ": " + e.getMessage(), e);
         }
     }
 }
