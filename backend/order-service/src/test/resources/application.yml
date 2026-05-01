@@ -1,0 +1,18 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:9999/protocol/openid-connect/certs
+
+eureka:
+  client:
+    enabled: false
+
+saga:
+  rabbit:
+    routingKeys:
+      stockReserveRequested: order.stock.reserve.requested

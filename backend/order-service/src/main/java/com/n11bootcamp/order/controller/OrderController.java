@@ -46,7 +46,7 @@ public class OrderController {
     public ResponseEntity<OrderResponse> createOrder(
             @RequestHeader(HEADER_USER_ID) String userId,
             @RequestHeader(value = HEADER_USERNAME, required = false) String username,
-            @RequestHeader(value = HEADER_IDEMPOTENCY, required = false) String idempotencyKey,
+            @RequestHeader(HEADER_IDEMPOTENCY) String idempotencyKey,
             @RequestBody @Valid CreateOrderRequest request) {
 
         // idempotencyKey null gelebilir — karar OrderService içinde verilir (iş mantığı)

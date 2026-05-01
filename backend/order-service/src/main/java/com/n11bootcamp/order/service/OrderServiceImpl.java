@@ -38,7 +38,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponse createOrder(String userId, String username,
                                       String idempotencyKey, CreateOrderRequest request) {
-        String effectiveKey = resolveIdempotencyKey(idempotencyKey);
+        String effectiveKey = validateIdempotencyKey(idempotencyKey);
 
         var existing = orderRepository.findByIdempotencyKey(effectiveKey);
         if (existing.isPresent()) {
@@ -112,11 +112,12 @@ public class OrderServiceImpl implements OrderService {
         log.info("Order {} CANCELLED — reason: {}", orderId, reason);
     }
 
-
-    private String resolveIdempotencyKey(String idempotencyKey) {
-        return (idempotencyKey != null && !idempotencyKey.isBlank())
-            ? idempotencyKey
-            : UUID.randomUUID().toString();
+    private String validateIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Idempotency-Key header is required and cannot be blank");
+        }
+        return idempotencyKey;
     }
 
     private BigDecimal calculateTotal(List<CreateOrderRequest.OrderItemRequest> items) {
