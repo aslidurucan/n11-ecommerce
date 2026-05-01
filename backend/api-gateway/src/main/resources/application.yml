@@ -28,13 +28,13 @@ spring:
             allowCredentials: true
             maxAge: 3600
       routes:
-        # ========== USER SERVICE ==========
+
         - id: user-service
           uri: lb://USER-SERVICE
           predicates:
             - Path=/api/auth/**,/api/users/**
           filters:
-            # Rate limit: kayıt ve login için sıkı
+
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 5
@@ -42,37 +42,36 @@ spring:
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@ipKeyResolver}"
 
-        # ========== PRODUCT SERVICE ==========
+
         - id: product-service
           uri: lb://PRODUCT-SERVICE
           predicates:
             - Path=/api/products/**,/api/categories/**
 
-        # ========== CART SERVICE ==========
+
         - id: cart-service
           uri: lb://CART-SERVICE
           predicates:
             - Path=/api/cart/**
 
-        # ========== ORDER SERVICE ==========
+
         - id: order-service
           uri: lb://ORDER-SERVICE
           predicates:
             - Path=/api/orders/**,/api/payments/**
 
-        # ========== STOCK SERVICE ==========
+
         - id: stock-service
           uri: lb://STOCK-SERVICE
           predicates:
             - Path=/api/stock/**
 
-        # ========== NOTIFICATION SERVICE - WebSocket ==========
         - id: notification-ws
           uri: lb:ws://NOTIFICATION-SERVICE
           predicates:
             - Path=/ws/**
 
-        # ========== NOTIFICATION REST ==========
+
         - id: notification-rest
           uri: lb://NOTIFICATION-SERVICE
           predicates:
@@ -99,3 +98,17 @@ management:
   endpoint:
     gateway:
       access: read-only
+
+      app:
+        security:
+          public-paths:
+            - "/api/auth/**"
+            - "/api/users/signup"
+            - "/actuator/**"
+            - "/eureka/**"
+            - "/v3/api-docs/**"
+            - "/swagger-ui/**"
+            - "/swagger-ui.html"
+          public-get-paths:
+            - "/api/products/**"
+            - "/api/categories/**"

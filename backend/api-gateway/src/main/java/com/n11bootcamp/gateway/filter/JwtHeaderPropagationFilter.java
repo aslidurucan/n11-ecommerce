@@ -11,8 +11,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtHeaderPropagationFilter implements GlobalFilter, Ordered {
@@ -20,37 +21,43 @@ public class JwtHeaderPropagationFilter implements GlobalFilter, Ordered {
     public static final String HEADER_USER_ID = "X-User-Id";
     public static final String HEADER_USERNAME = "X-User-Username";
     public static final String HEADER_USER_ROLES = "X-User-Roles";
+    private static final int FILTER_ORDER = -100;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         return ReactiveSecurityContextHolder.getContext()
-            .map(ctx -> ctx.getAuthentication())
-            .filter(auth -> auth instanceof JwtAuthenticationToken)
-            .cast(JwtAuthenticationToken.class)
-            .map(jwtAuth -> {
-                Jwt jwt = jwtAuth.getToken();
+                .map(ctx -> ctx.getAuthentication())
+                .filter(auth -> auth instanceof JwtAuthenticationToken)
+                .cast(JwtAuthenticationToken.class)
+                .map(jwtAuth -> propagateHeadersFromJwt(exchange, jwtAuth.getToken()))
+                .defaultIfEmpty(exchange)
+                .flatMap(chain::filter);
+    }
 
-                String userId = jwt.getSubject();
-                String username = jwt.getClaimAsString("preferred_username");
+    private ServerWebExchange propagateHeadersFromJwt(ServerWebExchange exchange, Jwt jwt) {
+        String userId = jwt.getSubject();
+        String username = jwt.getClaimAsString("preferred_username");
+        String roles = extractRolesFromKeycloakJwt(jwt);
 
-                String roles = Optional.ofNullable(jwt.getClaimAsMap("realm_access"))
-                        .map(m -> (java.util.Collection<?>) m.get("roles"))
-                        .map(c -> String.join(",", c.stream().map(Object::toString).toList()))
-                        .orElse("");
+        ServerHttpRequest mutated = exchange.getRequest().mutate()
+                .header(HEADER_USER_ID, userId == null ? "" : userId)
+                .header(HEADER_USERNAME, username == null ? "" : username)
+                .header(HEADER_USER_ROLES, roles)
+                .build();
+        return exchange.mutate().request(mutated).build();
+    }
 
-                ServerHttpRequest mutated = exchange.getRequest().mutate()
-                        .header(HEADER_USER_ID, userId == null ? "" : userId)
-                        .header(HEADER_USERNAME, username == null ? "" : username)
-                        .header(HEADER_USER_ROLES, roles)
-                        .build();
-                return exchange.mutate().request(mutated).build();
-            })
-            .defaultIfEmpty(exchange)
-            .flatMap(chain::filter);
+    private String extractRolesFromKeycloakJwt(Jwt jwt) {
+        return Optional.ofNullable(jwt.getClaimAsMap("realm_access"))
+                .map(claim -> (Collection<?>) claim.get("roles"))
+                .map(rolesCollection -> rolesCollection.stream()
+                        .map(Object::toString)
+                        .collect(Collectors.joining(",")))
+                .orElse("");
     }
 
     @Override
     public int getOrder() {
-        return -100;
+        return FILTER_ORDER;
     }
 }
