@@ -9,13 +9,29 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-
+/**
+ * Stock saga listener.
+ *
+ * <p><b>ÖNEMLİ — Transaction yönetimi:</b></p>
+ * <p>Bu sınıfta @Transactional KULLANMIYORUZ. Niye?</p>
+ * <ul>
+ *   <li>StockService.reserveStock zaten @Transactional — DB işlemleri kendi
+ *       kısa transaction'ında yapılıyor.</li>
+ *   <li>RabbitMQ publish DB transaction içinde değil — connection pool boşa
+ *       tutulmuyor, atomicity sorunu yok.</li>
+ *   <li>Service.reserveStock döndüğünde DB transaction commit olmuş demek —
+ *       sonrasında RabbitMQ publish güvenli.</li>
+ * </ul>
+ *
+ * <p><b>Trade-off:</b> DB commit + RabbitMQ publish arasında %100 atomicity yok.
+ * Production-grade çözüm: Outbox pattern (order-service'teki gibi). Şu an
+ * bootcamp scope için bu basit yaklaşım kabul edilebilir.</p>
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -34,13 +50,16 @@ public class StockSagaListener {
     private String stockRejectedRk;
 
     @RabbitListener(queues = "${saga.rabbit.queues.stockReserveRequested}")
-    @Transactional
     public void onOrderCreated(OrderCreatedPayload event) {
         log.info("[STOCK-SAGA] OrderCreated: orderId={}, eventId={}", event.orderId(), event.eventId());
 
         List<ReservationItem> items = mapToReservationItems(event.items());
+
+        // DB transaction (StockService.reserveStock @Transactional)
+        // Method dönüşünde DB commit olmuş.
         List<Long> insufficientIds = stockService.reserveStock(event.orderId(), items);
 
+        // RabbitMQ publish — TRANSACTION DIŞINDA
         if (insufficientIds.isEmpty()) {
             publishStockReserved(event.orderId());
         } else {
@@ -49,10 +68,12 @@ public class StockSagaListener {
     }
 
     @RabbitListener(queues = "${saga.rabbit.queues.paymentFailed}")
-    @Transactional
     public void onPaymentFailed(PaymentFailedPayload event) {
         log.warn("[STOCK-SAGA] PaymentFailed: orderId={}, eventId={}", event.orderId(), event.eventId());
+
+        // DB transaction (StockService.releaseStock @Transactional)
         stockService.releaseStock(event.orderId());
+
         log.info("[STOCK-SAGA] Stock released for order {}", event.orderId());
     }
 

@@ -166,7 +166,7 @@ class StockServiceImplTest {
         ProductStock stock1 = buildStock(101L, 8, 2);
         ProductStock stock2 = buildStock(102L, 2, 3);
 
-        when(reservationRepo.findByOrderId(orderId)).thenReturn(List.of(r1, r2));
+        when(reservationRepo.findByOrderIdForUpdate(orderId)).thenReturn(List.of(r1, r2));
         when(stockRepo.findAllByIdForUpdate(List.of(101L, 102L)))
                 .thenReturn(List.of(stock1, stock2));
 
@@ -191,7 +191,7 @@ class StockServiceImplTest {
     void releaseStock_whenNoReservations_isNoOp() {
         // GIVEN: hiç rezervasyon yok
         Long orderId = 999L;
-        when(reservationRepo.findByOrderId(orderId)).thenReturn(Collections.emptyList());
+        when(reservationRepo.findByOrderIdForUpdate(orderId)).thenReturn(Collections.emptyList());
 
         // WHEN
         stockService.releaseStock(orderId);

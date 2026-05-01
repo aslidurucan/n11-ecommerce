@@ -43,6 +43,13 @@ springdoc:
   info:
     title: Stock Service API
     version: 1.0.0
-    app:
-      exception:
-        verbose: ${EXCEPTION_VERBOSE:false}
+
+# ========================================
+# EXCEPTION HANDLING — Verbose Flag
+# ========================================
+# Production'da exception detayları (class adı, cause) API cevabında gizleniyor
+# (OWASP A09:2021 — bilgi sızdırma riskine karşı). Loglar her zaman tam detay.
+# Dev'de açmak için: EXCEPTION_VERBOSE=true env var.
+app:
+  exception:
+    verbose: ${EXCEPTION_VERBOSE:false}

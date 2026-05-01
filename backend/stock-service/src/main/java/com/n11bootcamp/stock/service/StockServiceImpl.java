@@ -109,7 +109,8 @@ public class StockServiceImpl implements StockService {
     @Override
     @Transactional
     public void releaseStock(Long orderId) {
-        List<StockReservation> reservations = reservationRepo.findByOrderId(orderId);
+        // Pessimistic lock ile al — duplicate PaymentFailedEvent race condition koruması
+        List<StockReservation> reservations = reservationRepo.findByOrderIdForUpdate(orderId);
 
         if (reservations.isEmpty()) {
             log.warn("[STOCK] No reservations for order {} — already released or never reserved", orderId);
