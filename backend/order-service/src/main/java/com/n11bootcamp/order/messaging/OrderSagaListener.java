@@ -13,8 +13,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Saga event listener'ı.
+ *
+ * <p><b>ÖNEMLİ — Transaction Yönetimi:</b></p>
+ * <p>Bu sınıfta @Transactional KULLANMIYORUZ. Niye? Çünkü onStockReserved metodu
+ * Iyzico HTTP API çağrısı içeriyor (3-30 saniye sürebilir). Eğer @Transactional
+ * olsa, DB connection bu süre boyunca tutulur ve connection pool tükenir.</p>
+ *
+ * <p>Bunun yerine, her DB işlemi için OrderService'in kendi @Transactional'ı
+ * kullanılıyor — kısa süreli, hızlı transaction'lar.</p>
+ *
+ * <p>Iyzico HTTP çağrısı transaction dışında — DB connection'ı tutmuyor.</p>
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -26,7 +38,6 @@ public class OrderSagaListener {
     private final PaymentProcessor paymentProcessor;
 
     @RabbitListener(queues = "${saga.rabbit.queues.stockReserved}")
-    @Transactional
     public void onStockReserved(StockReservedEvent event) {
         log.info("[SAGA] StockReserved: orderId={}, eventId={}", event.orderId(), event.eventId());
 
@@ -38,20 +49,24 @@ public class OrderSagaListener {
             return;
         }
 
+        // Tek başına transaction (OrderService.updateOrderStatus @Transactional)
         orderService.updateOrderStatus(order.getId(), OrderStatus.STOCK_RESERVED);
 
+        // Redis okuma — transaction dışında, hızlı
         CardRequest card = cardCacheService.getCard(order.getId());
         if (card == null) {
             log.error("[SAGA] Card cache MISS for order {} — session expired", order.getId());
+            // Tek başına transaction (OrderService.cancelOrder @Transactional)
             orderService.cancelOrder(order.getId(), "Payment session expired");
             return;
         }
 
+        // Iyzico HTTP çağrısı — transaction DIŞINDA (3-30sn sürebilir)
+        // PaymentProcessor.process() içinde DB güncellemeleri kendi mini-transaction'larında
         paymentProcessor.process(order, card);
     }
 
     @RabbitListener(queues = "${saga.rabbit.queues.stockRejected}")
-    @Transactional
     public void onStockRejected(StockRejectedEvent event) {
         log.warn("[SAGA] StockRejected: orderId={}, reason={}", event.orderId(), event.reason());
 

@@ -18,8 +18,13 @@ import java.util.List;
 @Repository
 public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> {
 
+    /**
+     * Henüz publish edilmemiş event'leri kilitleyerek getirir.
+     * SKIP LOCKED: -2 = Hibernate sabit değeri. Multi-instance publisher için gerekli.
+     * Spring Boot 3.x: hint adı 'jakarta.persistence' olmalı (javax silently ignored).
+     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @QueryHints(@QueryHint(name = "javax.persistence.lock.timeout", value = "-2"))
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
     @Query("""
             SELECT e FROM OutboxEvent e
             WHERE e.published = false AND e.retryCount < :maxRetries

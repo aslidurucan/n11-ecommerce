@@ -91,8 +91,12 @@ public class Order {
     }
 
 
+    /**
+     * Order durumunu değiştirir. Terminal state'ten (COMPLETED, CANCELLED) çıkış yasaktır.
+     * Hangi state'lerin terminal olduğunu OrderStatus.isTerminal() belirler — single source of truth.
+     */
     public void transitionTo(OrderStatus newStatus) {
-        if (this.status == OrderStatus.COMPLETED || this.status == OrderStatus.CANCELLED) {
+        if (this.status != null && this.status.isTerminal()) {
             throw new IllegalStateException(
                 "Order " + id + " is in terminal state " + status + ", cannot transition to " + newStatus);
         }
