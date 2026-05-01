@@ -71,6 +71,20 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - eureka-server
+          - config-server
+          - api-gateway
+          - user-service
+          - product-service
+          - cart-service
+          - order-service
+          - stock-service
+          - notification-service
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -85,11 +99,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & push images with Jib
+      - name: Build & push image with Jib
         working-directory: backend
         run: |
-          mvn -B compile jib:build \
-            -Djib.to.image=${{ secrets.DOCKERHUB_USERNAME }}/n11ecommerce-${{ matrix.service }}:latest
+          mvn -B -pl ${{ matrix.service }} -am compile jib:build \
+            -Djib.to.image=${{ secrets.DOCKERHUB_USERNAME }}/n11ecommerce-${{ matrix.service }}:${{ github.sha }} \
+            -Djib.to.tags=latest
 
   notify-slack:
     needs: [build-test, publish-image]
