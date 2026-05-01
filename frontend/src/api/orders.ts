@@ -1,12 +1,15 @@
 import { apiClient } from './axios'
 import type { CreateOrderRequest, OrderResponse } from '@/types/order'
 import type { Page } from '@/types/product'
-import { v4 as uuidv4 } from 'uuid'
 
 export const ordersApi = {
-  create: async (req: CreateOrderRequest): Promise<OrderResponse> => {
+
+  create: async (
+      req: CreateOrderRequest,
+      idempotencyKey: string,
+  ): Promise<OrderResponse> => {
     const res = await apiClient.post<OrderResponse>('/orders', req, {
-      headers: { 'Idempotency-Key': uuidv4() },
+      headers: { 'Idempotency-Key': idempotencyKey },
     })
     return res.data
   },

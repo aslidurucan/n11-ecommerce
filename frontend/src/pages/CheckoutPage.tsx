@@ -10,6 +10,7 @@ import { formatPrice } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import type { CreateOrderRequest } from '@/types/order'
+import { v4 as uuidv4 } from 'uuid'
 
 type Step = 'address' | 'payment' | 'success'
 
@@ -30,6 +31,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [orderId, setOrderId] = useState<number | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [idempotencyKey] = useState(() => uuidv4())
 
   const { data: cart } = useQuery({
     queryKey: ['cart'],
@@ -80,7 +82,7 @@ export default function CheckoutPage() {
           number: card.number.replace(/\s/g, ''),
         },
       }
-      const order = await ordersApi.create(req)
+      const order = await ordersApi.create(req, idempotencyKey)
       setOrderId(order.id)
       setCart(null)
       setStep('success')

@@ -1,14 +1,17 @@
 # ===================================================================
-# n11-ecommerce - Tüm Stack
-# Tek komutla ayağa kaldır: docker-compose up -d
+# n11-ecommerce — Altyapı Servisleri (Postgres, Redis, RabbitMQ, Keycloak)
 # ===================================================================
-# NOT: Bu dosyada SADECE altyapı servisleri tanımlı (Postgres, Redis,
-# RabbitMQ, Keycloak). Backend servisleri Day 4'te eklenecek (Jib ile).
+# Kullanım:
+#   - Sadece infra (geliştirici IDE'den backend çalıştırır):
+#       docker-compose up -d
+#   - Tam stack (infra + 9 backend servisi):
+#       docker-compose -f docker-compose.yml -f docker-compose.full.yml up -d
+#
+# Tam stack için önce backend image'larını build edin:
+#   cd backend && mvn -B clean compile jib:dockerBuild
 
 services:
   # ============= POSTGRESQL =============
-  # Tek instance, içinde 6 ayrı database (servis başına 1 tane).
-  # Production'da her servisin ayrı Postgres cluster'ı olmalı.
   postgres:
     image: postgres:16-alpine
     container_name: n11-postgres
@@ -26,9 +29,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - n11-network
 
   # ============= REDIS =============
-  # 2 amaç: (1) Cart Service için cart store, (2) Order için card-cache + rate limiting
   redis:
     image: redis:7-alpine
     container_name: n11-redis
@@ -41,9 +45,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - n11-network
 
   # ============= RABBITMQ =============
-  # Saga event-bus. Management UI: http://localhost:15672 (guest/guest)
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: n11-rabbitmq
@@ -57,10 +62,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - n11-network
 
   # ============= KEYCLOAK =============
-  # Identity Provider. Admin: http://localhost:8090 (admin/admin)
-  # Realm import: ./keycloak/import/realm-export.json (Day 1'de oluştur)
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     container_name: n11-keycloak
@@ -84,17 +89,15 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-
-  # ============= EUREKA SERVER =============
-  # eureka-server:
-  #   image: n11ecommerce/eureka-server:1.0.0
-  #   container_name: n11-eureka
-  #   ports:
-  #     - "8761:8761"
-
-  # NOT: Day 4'te eklenecek. Şimdilik backend servislerini IDE'den çalıştırın.
+    networks:
+      - n11-network
 
 volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
+
+networks:
+  n11-network:
+    driver: bridge
+    name: n11-network

@@ -1,0 +1,223 @@
+# ===================================================================
+# n11-ecommerce — Tam Stack (Backend + Frontend katmanı)
+# ===================================================================
+# Bu dosya tek başına çalışmaz, base compose ile birlikte kullanılır:
+#   docker-compose -f docker-compose.yml -f docker-compose.full.yml up -d
+#
+# Ön koşul: Backend image'ları lokal Docker daemon'da hazır olmalı:
+#   cd backend && mvn -B clean compile jib:dockerBuild
+#
+# Mimari notlar:
+# - Servisler n11-network üzerinden konuşur (base compose'dan gelir)
+# - Container içinden Postgres'e "postgres:5432" ile erişilir (host'tan 5433)
+# - Eureka, Config Server ilk kalkar; diğerleri depends_on ile bekler
+
+services:
+  # ============= EUREKA SERVER =============
+  eureka-server:
+    image: n11ecommerce/eureka-server:1.0.0
+    container_name: n11-eureka
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - n11-network
+
+  # ============= CONFIG SERVER =============
+  config-server:
+    image: n11ecommerce/config-server:1.0.0
+    container_name: n11-config
+    ports:
+      - "8762:8762"
+    environment:
+      EUREKA_URI: http://eureka-server:8761/eureka
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8762/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - n11-network
+
+  # ============= USER SERVICE =============
+  user-service:
+    image: n11ecommerce/user-service:1.0.0
+    container_name: n11-user-service
+    ports:
+      - "8081:8081"
+    environment:
+      EUREKA_URI: http://eureka-server:8761/eureka
+      CONFIG_URI: http://config-server:8762
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/userdb
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/ecommerce
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - n11-network
+
+  # ============= PRODUCT SERVICE =============
+  product-service:
+    image: n11ecommerce/product-service:1.0.0
+    container_name: n11-product-service
+    ports:
+      - "8082:8082"
+    environment:
+      EUREKA_URI: http://eureka-server:8761/eureka
+      CONFIG_URI: http://config-server:8762
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/productdb
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/ecommerce
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - n11-network
+
+  # ============= CART SERVICE =============
+  cart-service:
+    image: n11ecommerce/cart-service:1.0.0
+    container_name: n11-cart-service
+    ports:
+      - "8083:8083"
+    environment:
+      EUREKA_URI: http://eureka-server:8761/eureka
+      CONFIG_URI: http://config-server:8762
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/ecommerce
+    depends_on:
+      config-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - n11-network
+
+  # ============= ORDER SERVICE =============
+  order-service:
+    image: n11ecommerce/order-service:1.0.0
+    container_name: n11-order-service
+    ports:
+      - "8084:8084"
+    environment:
+      EUREKA_URI: http://eureka-server:8761/eureka
+      CONFIG_URI: http://config-server:8762
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/orderdb
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/ecommerce
+      IYZICO_API_KEY: ${IYZICO_API_KEY}
+      IYZICO_SECRET_KEY: ${IYZICO_SECRET_KEY}
+      IYZICO_BASE_URL: ${IYZICO_BASE_URL:-https://sandbox-api.iyzipay.com}
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - n11-network
+
+  # ============= STOCK SERVICE =============
+  stock-service:
+    image: n11ecommerce/stock-service:1.0.0
+    container_name: n11-stock-service
+    ports:
+      - "8085:8085"
+    environment:
+      EUREKA_URI: http://eureka-server:8761/eureka
+      CONFIG_URI: http://config-server:8762
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/stockdb
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/ecommerce
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - n11-network
+
+  # ============= NOTIFICATION SERVICE =============
+  notification-service:
+    image: n11ecommerce/notification-service:1.0.0
+    container_name: n11-notification-service
+    ports:
+      - "8086:8086"
+    environment:
+      EUREKA_URI: http://eureka-server:8761/eureka
+      CONFIG_URI: http://config-server:8762
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+    depends_on:
+      config-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - n11-network
+
+  # ============= API GATEWAY =============
+  api-gateway:
+    image: n11ecommerce/api-gateway:1.0.0
+    container_name: n11-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_URI: http://eureka-server:8761/eureka
+      CONFIG_URI: http://config-server:8762
+      KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/ecommerce
+    depends_on:
+      user-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+      cart-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      stock-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    networks:
+      - n11-network
