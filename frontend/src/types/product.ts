@@ -17,6 +17,7 @@ export interface ProductTranslation {
 }
 
 export interface ProductFilterRequest {
+  q?: string
   category?: string
   brand?: string
   minPrice?: number

@@ -11,6 +11,8 @@ export const productsApi = {
     params.page = filters.page ?? 0
     params.size = filters.size ?? 12
     if (filters.sort) params.sort = filters.sort
+    // q: client-side search term (backend bunu görmezden gelir, frontend filtreler)
+    if (filters.q) params.q = filters.q
 
     const res = await apiClient.get<Page<ProductResponse>>('/products', { params })
     return res.data

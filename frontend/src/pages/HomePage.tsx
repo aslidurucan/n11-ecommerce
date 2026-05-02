@@ -31,6 +31,7 @@ export default function HomePage() {
   const filters: ProductFilterRequest = {
     page: Number(searchParams.get('page') ?? 0),
     size: 12,
+    q: searchParams.get('q') ?? undefined,
     category: searchParams.get('category') ?? undefined,
     brand: searchParams.get('brand') ?? undefined,
     minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
@@ -98,7 +99,17 @@ export default function HomePage() {
     }
   }
 
-  const activeFiltersCount = [filters.category, filters.brand, filters.minPrice, filters.maxPrice].filter(Boolean).length
+  // Client-side text search: q ile ad/marka/kategori filtreleme
+  const searchQuery = filters.q?.toLowerCase().trim()
+  const displayedProducts = searchQuery
+    ? (data?.content ?? []).filter((p) =>
+        p.name.toLowerCase().includes(searchQuery) ||
+        p.brand?.toLowerCase().includes(searchQuery) ||
+        p.category?.toLowerCase().includes(searchQuery)
+      )
+    : (data?.content ?? [])
+
+  const activeFiltersCount = [filters.q, filters.category, filters.brand, filters.minPrice, filters.maxPrice].filter(Boolean).length
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -145,6 +156,9 @@ export default function HomePage() {
               </button>
 
               {/* Active filter chips */}
+              {filters.q && (
+                <FilterChip label={`"${filters.q}"`} onRemove={() => setFilter('q', null)} />
+              )}
               {filters.category && (
                 <FilterChip label={filters.category} onRemove={() => setFilter('category', null)} />
               )}
@@ -156,7 +170,9 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               {data && (
                 <span className="text-sm text-slate-500 whitespace-nowrap">
-                  {data.totalElements} ürün
+                  {searchQuery
+                    ? `${displayedProducts.length} sonuç`
+                    : `${data.totalElements} ürün`}
                 </span>
               )}
               <select
@@ -183,7 +199,7 @@ export default function HomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
             {isLoading
               ? Array.from({ length: 12 }).map((_, i) => <ProductCardSkeleton key={i} />)
-              : data?.content.map((product) => (
+              : displayedProducts.map((product) => (
                   <div
                     key={product.id}
                     className="group bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-xl hover:shadow-slate-200/60 hover:-translate-y-1 transition-all duration-300 animate-fade-in-up"
@@ -253,8 +269,16 @@ export default function HomePage() {
                 ))}
           </div>
 
+          {/* Arama sonucu yok */}
+          {!isLoading && searchQuery && displayedProducts.length === 0 && (
+            <div className="col-span-full py-16 text-center text-slate-400">
+              <p className="text-lg font-medium mb-1">Sonuç bulunamadı</p>
+              <p className="text-sm">"{filters.q}" için eşleşen ürün yok.</p>
+            </div>
+          )}
+
           {/* Pagination */}
-          {data && data.totalPages > 1 && (
+          {data && data.totalPages > 1 && !searchQuery && (
             <div className="flex items-center justify-center gap-2 mt-10">
               <button
                 onClick={() => setPage(filters.page! - 1)}
