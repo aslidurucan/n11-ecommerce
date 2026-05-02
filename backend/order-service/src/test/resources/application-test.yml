@@ -1,0 +1,62 @@
+# =====================================================
+# ORDER SERVICE — Test Profili
+# =====================================================
+# Config Server, Eureka devre dışı.
+# JwtDecoder mock bean ile, Iyzico mock payment ile çalışır.
+# Datasource + RabbitMQ → @DynamicPropertySource + Testcontainers ile override.
+# CardCacheService → @MockitoBean ile mock'lanır (Redis Testcontainer gerekmez).
+
+spring:
+  cloud:
+    config:
+      enabled: false
+  jpa:
+    show-sql: true
+
+eureka:
+  client:
+    enabled: false
+
+# Mock ödeme — Iyzico'ya gerçek HTTP çağrısı gitmez
+payment:
+  mock: true
+
+iyzico:
+  api-key: test-api-key
+  secret-key: test-secret-key
+  base-url: https://sandbox-api.iyzipay.com
+
+# Outbox publisher test sırasında otomatik çalışmasın
+outbox:
+  publisher:
+    fixed-delay-ms: 999999999
+
+# Config Server'dan gelen saga rabbit değerlerini burada tanımlıyoruz
+saga:
+  rabbit:
+    exchange: order.saga.exchange
+    dlx: order.saga.dlx
+    dlq: order.saga.dlq
+    queues:
+      stockReserveRequested: order.saga.stock.reserve.requested.queue
+      stockReserved: order.saga.stock.reserved.queue
+      stockRejected: order.saga.stock.rejected.queue
+      paymentCompleted: order.saga.payment.completed.queue
+      paymentFailed: order.saga.payment.failed.queue
+      orderCompleted: order.saga.order.completed.queue
+      orderCancelled: order.saga.order.cancelled.queue
+    routingKeys:
+      stockReserveRequested: order.stock.reserve.requested
+      stockReserved: order.stock.reserved
+      stockRejected: order.stock.rejected
+      paymentCompleted: order.payment.completed
+      paymentFailed: order.payment.failed
+      orderCompleted: order.completed
+      orderCancelled: order.cancelled
+
+logging:
+  level:
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
+    org.springframework.security: WARN
+    org.springframework.amqp: WARN

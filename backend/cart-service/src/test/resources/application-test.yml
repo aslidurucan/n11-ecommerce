@@ -1,0 +1,27 @@
+# =====================================================
+# CART SERVICE — Test Profili
+# =====================================================
+# Config Server, Eureka devre dışı.
+# JwtDecoder mock bean ile çalışır.
+# Redis → @DynamicPropertySource + GenericContainer (redis:7-alpine) ile override.
+# ProductClient (Feign) → @MockitoBean ile mock'lanır.
+
+spring:
+  cloud:
+    config:
+      enabled: false
+
+eureka:
+  client:
+    enabled: false
+
+# Feign circuit breaker testlerde gereksiz
+feign:
+  circuitbreaker:
+    enabled: false
+
+logging:
+  level:
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
+    org.springframework.security: WARN

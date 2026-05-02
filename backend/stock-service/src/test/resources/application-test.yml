@@ -1,0 +1,25 @@
+# =====================================================
+# STOCK SERVICE — Test Profili
+# =====================================================
+# Config Server, Eureka, Redis cache devre dışı.
+# JwtDecoder mock bean (TestSecurityConfig inner class) tarafından sağlanır.
+# Datasource → @DynamicPropertySource + PostgreSQL Testcontainer ile override edilir.
+
+spring:
+  cloud:
+    config:
+      enabled: false
+  cache:
+    type: none             # CacheEvict/Cacheable no-op — DB kilit davranışını izole test
+  jpa:
+    show-sql: true
+
+eureka:
+  client:
+    enabled: false
+
+logging:
+  level:
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
+    org.springframework.security: WARN
