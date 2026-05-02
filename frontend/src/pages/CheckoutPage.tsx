@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CreditCard, MapPin, ChevronRight, Lock, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cartApi } from '@/api/cart'
@@ -24,6 +24,7 @@ const INITIAL_CARD = {
 
 export default function CheckoutPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { setCart } = useCartStore()
   const [step, setStep] = useState<Step>('address')
   const [address, setAddress] = useState(INITIAL_ADDRESS)
@@ -84,6 +85,9 @@ export default function CheckoutPage() {
       }
       const order = await ordersApi.create(req, idempotencyKey)
       setOrderId(order.id)
+      // Backend cart'ı temizle (sessizce — sipariş zaten oluştu)
+      try { await cartApi.clearCart() } catch { /* ignore */ }
+      queryClient.invalidateQueries({ queryKey: ['cart'] })
       setCart(null)
       setStep('success')
     } catch (err: unknown) {

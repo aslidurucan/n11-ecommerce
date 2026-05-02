@@ -8,9 +8,11 @@ import { useAuthStore } from '@/store/authStore'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { getErrorMessage } from '@/lib/utils'
+import { useQueryClient } from '@tanstack/react-query'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const location = useLocation()
   const { setToken, setAuth } = useAuthStore()
   const from = (location.state as { from?: string })?.from ?? '/'
@@ -31,6 +33,7 @@ export default function LoginPage() {
     e.preventDefault()
     if (!validate()) return
     setLoading(true)
+    queryClient.clear()
     try {
       const tokens = await authApi.login(form.email, form.password)
       // Token'ı önce store'a yaz ki getMe() interceptor'ı görebilsin

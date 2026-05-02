@@ -3,19 +3,27 @@ import { ShoppingCart, User, LogOut, Package, Menu, X, Search } from 'lucide-rea
 import { useState } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import { useCartStore } from '@/store/cartStore'
+import { authApi } from '@/api/auth'
 import Button from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { useQueryClient } from '@tanstack/react-query'
 
 export default function Header() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const location = useLocation()
-  const { isAuthenticated, user, logout } = useAuthStore()
+  const { isAuthenticated, user, refreshToken, logout } = useAuthStore()
   const { itemCount } = useCartStore()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
 
   const handleLogout = () => {
+    // Keycloak refresh token revoke (fire & forget — UI'ı bloklamaz)
+    if (refreshToken) {
+      authApi.logout(refreshToken).catch(() => { /* sessizce geç */ })
+    }
     logout()
+    queryClient.clear() // Yeni kullanıcı eski cache'i görmesin
     navigate('/login')
   }
 
