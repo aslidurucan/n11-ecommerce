@@ -20,18 +20,12 @@ public class UserServiceImpl implements UserService {
     private final UserProfileRepository profileRepository;
 
     @Override
-    @Transactional
     public UserProfileResponse signup(SignupRequest request) {
         String userId = identityProvider.createUser(request);
 
         UserProfile savedProfile;
         try {
-            savedProfile = profileRepository.save(
-                    UserProfile.builder()
-                            .keycloakId(userId)
-                            .phone(request.phone())
-                            .build()
-            );
+            savedProfile = saveUserProfile(userId, request.phone());
         } catch (Exception e) {
             log.error("DB save failed after Keycloak create for userId={}. Compensating.", userId, e);
             tryDeleteIdentityUser(userId);
@@ -49,8 +43,17 @@ public class UserServiceImpl implements UserService {
         );
     }
 
+    @Transactional
+    protected UserProfile saveUserProfile(String userId, String phone) {
+        return profileRepository.save(
+                UserProfile.builder()
+                        .keycloakId(userId)
+                        .phone(phone)
+                        .build()
+        );
+    }
+
     @Override
-    @Transactional(readOnly = true)
     public UserProfileResponse getProfile(String userId) {
         IdentityUser idUser = identityProvider.getUser(userId);
 
@@ -63,20 +66,18 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
     public UserProfileResponse updateProfile(String userId, UpdateProfileRequest request) {
         IdentityUser existing = identityProvider.getUser(userId);
 
-        UserProfile profile = profileRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
+        if (!profileRepository.existsById(userId)) {
+            throw new UserNotFoundException(userId);
+        }
 
         identityProvider.updateUser(userId, request);
 
+        UserProfile profile;
         try {
-            if (request.phone() != null) {
-                profile.setPhone(request.phone());
-                profileRepository.save(profile);
-            }
+            profile = persistPhoneUpdate(userId, request.phone());
         } catch (Exception e) {
             log.error("DB update failed for userId={}. Compensating Keycloak update.", userId, e);
             tryRollbackIdentityUser(userId, existing);
@@ -92,6 +93,17 @@ public class UserServiceImpl implements UserService {
                 profile.getPhone(),
                 profile.getCreatedAt()
         );
+    }
+
+    @Transactional
+    protected UserProfile persistPhoneUpdate(String userId, String newPhone) {
+        UserProfile profile = profileRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+        if (newPhone != null) {
+            profile.setPhone(newPhone);
+            profileRepository.save(profile);
+        }
+        return profile;
     }
 
 

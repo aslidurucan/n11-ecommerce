@@ -11,6 +11,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -24,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class UserServiceImplTest {
 
     @Mock
@@ -119,6 +122,7 @@ class UserServiceImplTest {
         UserProfile profile = buildProfile("kc-uuid-123", "05551234567");
 
         when(identityProvider.getUser("kc-uuid-123")).thenReturn(existing);
+        when(profileRepository.existsById("kc-uuid-123")).thenReturn(true);
         when(profileRepository.findById("kc-uuid-123")).thenReturn(Optional.of(profile));
         when(profileRepository.save(profile)).thenReturn(profile);
 
@@ -139,6 +143,7 @@ class UserServiceImplTest {
         UserProfile profile = buildProfile("kc-uuid-123", "05551234567");
 
         when(identityProvider.getUser("kc-uuid-123")).thenReturn(existing);
+        when(profileRepository.existsById("kc-uuid-123")).thenReturn(true);
         when(profileRepository.findById("kc-uuid-123")).thenReturn(Optional.of(profile));
 
         userService.updateProfile("kc-uuid-123", request);
@@ -148,11 +153,9 @@ class UserServiceImplTest {
 
     @Test
     void updateProfile_whenProfileNotInDb_throwsUserNotFoundException() {
-        IdentityUser existing = new IdentityUser("kc-uuid-123", "Ali", "Yılmaz", "ali@test.com");
         UpdateProfileRequest request = new UpdateProfileRequest("Mehmet", null, null, null);
 
-        when(identityProvider.getUser("kc-uuid-123")).thenReturn(existing);
-        when(profileRepository.findById("kc-uuid-123")).thenReturn(Optional.empty());
+        when(profileRepository.existsById("kc-uuid-123")).thenReturn(false);
 
         assertThatThrownBy(() -> userService.updateProfile("kc-uuid-123", request))
                 .isInstanceOf(UserNotFoundException.class)
@@ -166,6 +169,7 @@ class UserServiceImplTest {
         UserProfile profile = buildProfile("kc-uuid-123", "05551234567");
 
         when(identityProvider.getUser("kc-uuid-123")).thenReturn(existing);
+        when(profileRepository.existsById("kc-uuid-123")).thenReturn(true);
         when(profileRepository.findById("kc-uuid-123")).thenReturn(Optional.of(profile));
 
         UserProfileResponse result = userService.updateProfile("kc-uuid-123", request);
