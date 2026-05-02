@@ -200,24 +200,123 @@ npm run dev
 
 ---
 
-## 🧪 Testler
+## 🐳 Tam Stack Docker Deployment
+
+Geliştirme için yukarıdaki IDE-tabanlı yöntem hızlıdır. Ama **tek komutla tüm sistemi container'larda çalıştırmak** istersen:
+
+### Mimari
+
+```
+docker-compose.yml          → Altyapı (Postgres, Redis, RabbitMQ, Keycloak)
+docker-compose.full.yml     → Backend (9 mikroservis) + Frontend (Nginx)
+```
+
+### Adım 1 — Backend image'larını build et (Jib ile)
+
+Spring Boot servisleri için **Dockerfile yok** — Jib her servisi otomatik container'a paketler:
 
 ```bash
-# Unit testler
+cd backend
+mvn -B compile jib:dockerBuild -DskipTests \
+  -pl eureka-server,config-server,api-gateway,user-service,product-service,cart-service,order-service,stock-service,notification-service
+```
+
+Build sonunda 9 image lokal Docker daemon'da hazır:
+```
+n11ecommerce/eureka-server:1.0.0
+n11ecommerce/config-server:1.0.0
+n11ecommerce/api-gateway:1.0.0
+n11ecommerce/user-service:1.0.0
+n11ecommerce/product-service:1.0.0
+n11ecommerce/cart-service:1.0.0
+n11ecommerce/order-service:1.0.0
+n11ecommerce/stock-service:1.0.0
+n11ecommerce/notification-service:1.0.0
+```
+
+### Adım 2 — Tüm sistemi başlat
+
+Frontend image'ı compose tarafından otomatik build edilir (multi-stage Node + Nginx):
+
+```bash
+cd ..
+docker-compose -f docker-compose.yml -f docker-compose.full.yml up -d --build
+```
+
+İlk başlatmada ~2-3 dakika sürer (frontend image build + tüm servislerin healthcheck'leri).
+
+### Adım 3 — Sistem durumunu kontrol et
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.full.yml ps
+```
+
+Tüm servisler `healthy` veya `running` olmalı.
+
+### Adım 4 — Erişim
+
+| URL | Açıklama |
+|---|---|
+| http://localhost:3000 | Frontend (React + Nginx) |
+| http://localhost:8080 | API Gateway |
+| http://localhost:8761 | Eureka Dashboard |
+| http://localhost:15672 | RabbitMQ Management (guest/guest) |
+| http://localhost:8090 | Keycloak Admin |
+
+### Adım 5 — Sistemi durdur
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.full.yml down
+```
+
+Verileri silmek için:
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.full.yml down -v
+```
+
+### CI/CD — GitHub Actions
+
+Her push'ta:
+1. **Test:** Postgres + RabbitMQ + Redis container'ları ayağa kalkar, tüm unit testler çalışır
+2. **Build:** Jib ile 9 backend servisi paralel olarak image'a dönüşür
+3. **Notify:** Sonuç Slack'e bildirilir (opsiyonel)
+
+`.github/workflows/ci.yml` dosyasında detaylar.
+
+---
+
+## 🧪 Testler
+
+Toplam **130 unit test** — JUnit 5 + Mockito + AssertJ.
+
+```bash
+# Tüm testler
+cd backend
 mvn test
 
-# Integration testler (Testcontainers ile gerçek Postgres + RabbitMQ)
-mvn verify
+# Belirli servis
+mvn -pl order-service test
 
-# Spesifik test:
+# Spesifik test class
 mvn -pl order-service test -Dtest=OrderServiceIdempotencyTest
 ```
 
+### Test Kapsamı
+
+| Servis | Test Dosyası | Test Sayısı |
+|---|---|---|
+| user-service | UserServiceImplTest, UserControllerTest | 17 |
+| product-service | ProductServiceImplTest, ProductMapperTest, ProductControllerTest | 23 |
+| cart-service | CartTest, CartServiceImplTest, CartControllerTest | 25 |
+| order-service | OrderServiceImplTest, OrderControllerTest, OrderServiceIdempotencyTest, OutboxPublisherTest, OrderTest, OrderStatusTest | 41 |
+| stock-service | StockServiceImplTest, StockControllerTest | 20 |
+| notification-service | NotificationEventListenerTest | 4 |
+
 **Önemli testler:**
-- `OrderServiceIdempotencyTest` — aynı key 2 kez → tek order
-- `OrderSagaIntegrationTest` — happy path Saga (Testcontainers)
-- `StockReservationConcurrencyTest` — 100 paralel istek → race condition yok
-- `OutboxPublisherTest` — RabbitMQ down → event yine de yayınlanır (retry)
+- `OrderServiceIdempotencyTest` — aynı `Idempotency-Key` 2 kez gönderilse de tek order yaratılır
+- `OutboxPublisherTest` — Outbox pattern: RabbitMQ down olsa bile event'ler eninde sonunda yayınlanır
+- `StockServiceImplTest` — pessimistic lock + reservation lifecycle (reserve → commit / release)
+- `OrderStatusTest` — sipariş durum makinesi (PENDING → PAID → COMPLETED veya iptal akışları)
 
 ---
 
