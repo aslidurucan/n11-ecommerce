@@ -1,16 +1,3 @@
-# ===================================================================
-# n11-ecommerce — Tam Stack (Backend + Frontend katmanı)
-# ===================================================================
-# Bu dosya tek başına çalışmaz, base compose ile birlikte kullanılır:
-#   docker-compose -f docker-compose.yml -f docker-compose.full.yml up -d
-#
-# Ön koşul: Backend image'ları lokal Docker daemon'da hazır olmalı:
-#   cd backend && mvn -B clean compile jib:dockerBuild
-#
-# Mimari notlar:
-# - Servisler n11-network üzerinden konuşur (base compose'dan gelir)
-# - Container içinden Postgres'e "postgres:5432" ile erişilir (host'tan 5433)
-# - Eureka, Config Server ilk kalkar; diğerleri depends_on ile bekler
 
 services:
   # ============= EUREKA SERVER =============
@@ -61,15 +48,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/ecommerce
-      KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
     depends_on:
       config-server:
         condition: service_healthy
       postgres:
         condition: service_healthy
       keycloak:
-        condition: service_healthy
+        condition: service_started
     networks:
       - n11-network
 
@@ -208,8 +193,6 @@ services:
       EUREKA_URI: http://eureka-server:8761/eureka
       CONFIG_URI: http://config-server:8762
       KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/ecommerce
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
     depends_on:
       user-service:
         condition: service_started
@@ -222,6 +205,27 @@ services:
       stock-service:
         condition: service_started
       notification-service:
+        condition: service_started
+    networks:
+      - n11-network
+
+  # ============= FRONTEND =============
+  # React + Nginx — gateway uzerinden API'ye konusur (nginx.conf icinde proxy)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_KEYCLOAK_URL: http://localhost:8090
+        VITE_KEYCLOAK_REALM: ecommerce
+        VITE_KEYCLOAK_CLIENT_ID: new-user-service
+    image: n11ecommerce/frontend:1.0.0
+    container_name: n11-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      api-gateway:
         condition: service_started
     networks:
       - n11-network
