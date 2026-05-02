@@ -20,9 +20,11 @@ public class RabbitMQConfig {
 
     @Value("${saga.rabbit.queues.stockReserveRequested}") private String stockReserveRequestedQueue;
     @Value("${saga.rabbit.queues.paymentFailed}")         private String paymentFailedQueue;
+    @Value("${saga.rabbit.queues.orderCompleted}")        private String orderCompletedQueue;
 
     @Value("${saga.rabbit.routingKeys.stockReserveRequested}") private String stockReserveRequestedRk;
     @Value("${saga.rabbit.routingKeys.paymentFailed}")         private String paymentFailedRk;
+    @Value("${saga.rabbit.routingKeys.orderCompleted}")        private String orderCompletedRk;
 
     @Bean
     public TopicExchange sagaExchange() {
@@ -47,31 +49,46 @@ public class RabbitMQConfig {
     @Bean
     public Queue stockReserveRequestedQ() {
         return QueueBuilder.durable(stockReserveRequestedQueue)
-            .deadLetterExchange(dlxName)
-            .deadLetterRoutingKey(stockReserveRequestedRk + ".dead")
-            .build();
+                .deadLetterExchange(dlxName)
+                .deadLetterRoutingKey(stockReserveRequestedRk + ".dead")
+                .build();
     }
 
     @Bean
     public Binding stockReserveRequestedBinding() {
         return BindingBuilder.bind(stockReserveRequestedQ())
-            .to(sagaExchange())
-            .with(stockReserveRequestedRk);
+                .to(sagaExchange())
+                .with(stockReserveRequestedRk);
     }
 
     @Bean
     public Queue paymentFailedQ() {
         return QueueBuilder.durable(paymentFailedQueue)
-            .deadLetterExchange(dlxName)
-            .deadLetterRoutingKey(paymentFailedRk + ".dead")
-            .build();
+                .deadLetterExchange(dlxName)
+                .deadLetterRoutingKey(paymentFailedRk + ".dead")
+                .build();
     }
 
     @Bean
     public Binding paymentFailedBinding() {
         return BindingBuilder.bind(paymentFailedQ())
-            .to(sagaExchange())
-            .with(paymentFailedRk);
+                .to(sagaExchange())
+                .with(paymentFailedRk);
+    }
+
+    @Bean
+    public Queue orderCompletedQ() {
+        return QueueBuilder.durable(orderCompletedQueue)
+                .deadLetterExchange(dlxName)
+                .deadLetterRoutingKey(orderCompletedRk + ".dead")
+                .build();
+    }
+
+    @Bean
+    public Binding orderCompletedBinding() {
+        return BindingBuilder.bind(orderCompletedQ())
+                .to(sagaExchange())
+                .with(orderCompletedRk);
     }
 
     @Bean
@@ -83,7 +100,7 @@ public class RabbitMQConfig {
 
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,
-                                          MessageConverter messageConverter) {
+                                         MessageConverter messageConverter) {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(messageConverter);
         return template;

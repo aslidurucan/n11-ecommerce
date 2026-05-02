@@ -44,7 +44,7 @@ public class StockServiceImpl implements StockService {
     @Transactional
     public StockResponse setStock(UpdateStockRequest request) {
         ProductStock stock = stockRepo.findById(request.getProductId())
-            .orElseGet(() -> buildNewStock(request.getProductId()));
+                .orElseGet(() -> buildNewStock(request.getProductId()));
 
         stock.setAvailableQuantity(request.getQuantity());
         stockRepo.save(stock);
@@ -125,28 +125,62 @@ public class StockServiceImpl implements StockService {
         log.info("[STOCK] Compensation complete for order {}", orderId);
     }
 
+    @Override
+    @Transactional
+    public void commitReservation(Long orderId) {
+        // Pessimistic lock ile al — duplicate OrderCompletedEvent race condition koruması
+        List<StockReservation> reservations = reservationRepo.findByOrderIdForUpdate(orderId);
+
+        if (reservations.isEmpty()) {
+            log.warn("[STOCK] No reservations for order {} — already committed or never reserved", orderId);
+            return;
+        }
+
+        Map<Long, ProductStock> stockMap = loadReservationStocksWithLock(reservations);
+
+        confirmReservedUnits(reservations, stockMap);
+        reservationRepo.deleteByOrderId(orderId);
+
+        log.info("[STOCK] Commit complete for order {}", orderId);
+    }
+
+    private void confirmReservedUnits(List<StockReservation> reservations,
+                                      Map<Long, ProductStock> stockMap) {
+        for (StockReservation reservation : reservations) {
+            ProductStock stock = stockMap.get(reservation.getProductId());
+            if (stock != null) {
+                stock.confirmReservation(reservation.getQuantity()); // entity içindeki iş kuralı
+                log.info("[STOCK] Committed {} units of product {} for order {}",
+                        reservation.getQuantity(), reservation.getProductId(), reservation.getOrderId());
+            } else {
+                log.warn("[STOCK] ProductStock not found during commit: productId={}",
+                        reservation.getProductId());
+            }
+        }
+    }
+
 
     private ProductStock buildNewStock(Long productId) {
         return ProductStock.builder()
-            .productId(productId)
-            .availableQuantity(0)
-            .reservedQuantity(0)
-            .build();
+                .productId(productId)
+                .availableQuantity(0)
+                .reservedQuantity(0)
+                .build();
     }
 
 
     private void validatePositiveDelta(int delta, String operation) {
         if (delta <= 0) {
             throw new IllegalArgumentException(
-                "Delta must be positive for " + operation + ", got: " + delta);
+                    "Delta must be positive for " + operation + ", got: " + delta);
         }
     }
 
     private void validateSufficientStockForDecrease(ProductStock stock, int delta) {
         if (stock.getAvailableQuantity() < delta) {
             throw new IllegalStateException(
-                "Insufficient stock to decrease: available="
-                    + stock.getAvailableQuantity() + ", requested=" + delta);
+                    "Insufficient stock to decrease: available="
+                            + stock.getAvailableQuantity() + ", requested=" + delta);
         }
     }
 
@@ -157,71 +191,71 @@ public class StockServiceImpl implements StockService {
 
     private Map<Long, ProductStock> loadStocksWithLock(List<ReservationItem> items) {
         List<Long> sortedIds = items.stream()
-            .map(ReservationItem::productId)
-            .sorted()
-            .toList();
+                .map(ReservationItem::productId)
+                .sorted()
+                .toList();
 
         return stockRepo.findAllByIdForUpdate(sortedIds).stream()
-            .collect(Collectors.toMap(ProductStock::getProductId, stock -> stock));
+                .collect(Collectors.toMap(ProductStock::getProductId, stock -> stock));
     }
 
     private Map<Long, ProductStock> loadReservationStocksWithLock(List<StockReservation> reservations) {
         List<Long> sortedIds = reservations.stream()
-            .map(StockReservation::getProductId)
-            .sorted()
-            .toList();
+                .map(StockReservation::getProductId)
+                .sorted()
+                .toList();
 
         return stockRepo.findAllByIdForUpdate(sortedIds).stream()
-            .collect(Collectors.toMap(ProductStock::getProductId, stock -> stock));
+                .collect(Collectors.toMap(ProductStock::getProductId, stock -> stock));
     }
 
     private List<Long> findInsufficientStocks(List<ReservationItem> items,
-                                               Map<Long, ProductStock> stockMap) {
+                                              Map<Long, ProductStock> stockMap) {
         return items.stream()
-            .filter(item -> {
-                ProductStock stock = stockMap.get(item.productId());
-                return stock == null || !stock.canReserve(item.quantity());
-            })
-            .map(ReservationItem::productId)
-            .toList();
+                .filter(item -> {
+                    ProductStock stock = stockMap.get(item.productId());
+                    return stock == null || !stock.canReserve(item.quantity());
+                })
+                .map(ReservationItem::productId)
+                .toList();
     }
 
     private void applyReservations(Long orderId, List<ReservationItem> items,
-                                    Map<Long, ProductStock> stockMap) {
+                                   Map<Long, ProductStock> stockMap) {
         for (ReservationItem item : items) {
             ProductStock stock = stockMap.get(item.productId());
             stock.reserve(item.quantity()); // entity içindeki iş kuralı
 
             reservationRepo.save(StockReservation.builder()
-                .orderId(orderId)
-                .productId(item.productId())
-                .quantity(item.quantity())
-                .build());
+                    .orderId(orderId)
+                    .productId(item.productId())
+                    .quantity(item.quantity())
+                    .build());
         }
     }
 
     private void releaseReservedUnits(List<StockReservation> reservations,
-                                       Map<Long, ProductStock> stockMap) {
+                                      Map<Long, ProductStock> stockMap) {
         for (StockReservation reservation : reservations) {
             ProductStock stock = stockMap.get(reservation.getProductId());
             if (stock != null) {
                 stock.release(reservation.getQuantity()); // entity içindeki iş kuralı
                 log.info("[STOCK] Released {} units of product {} for order {}",
-                    reservation.getQuantity(), reservation.getProductId(), reservation.getOrderId());
+                        reservation.getQuantity(), reservation.getProductId(), reservation.getOrderId());
             } else {
                 log.warn("[STOCK] ProductStock not found during release: productId={}",
-                    reservation.getProductId());
+                        reservation.getProductId());
             }
         }
     }
 
     private ProductStock findStockOrThrow(Long productId) {
         return stockRepo.findById(productId)
-            .orElseThrow(() -> new StockNotFoundException(productId));
+                .orElseThrow(() -> new StockNotFoundException(productId));
     }
 
     private ProductStock findStockForUpdateOrThrow(Long productId) {
         return stockRepo.findByIdForUpdate(productId)
-            .orElseThrow(() -> new StockNotFoundException(productId));
+                .orElseThrow(() -> new StockNotFoundException(productId));
     }
 }

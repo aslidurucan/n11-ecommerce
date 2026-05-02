@@ -9,38 +9,45 @@ public class StockSagaEvents {
 
 
     public record OrderCreatedPayload(
-        String eventId,
-        Long orderId,
-        String userId,
-        String username,
-        BigDecimal totalAmount,
-        String currency,
-        List<Item> items,
-        Instant occurredAt
+            String eventId,
+            Long orderId,
+            String userId,
+            String username,
+            BigDecimal totalAmount,
+            String currency,
+            List<Item> items,
+            Instant occurredAt
     ) {
         public record Item(Long productId, Integer quantity) {}
     }
 
     public record PaymentFailedPayload(
-        String eventId,
-        Long orderId,
-        String reason,
-        Instant occurredAt
+            String eventId,
+            Long orderId,
+            String reason,
+            Instant occurredAt
     ) {}
 
 
     public record StockReservedPayload(
-        String eventId,
-        Long orderId,
-        String reservationId,
-        Instant occurredAt
+            String eventId,
+            Long orderId,
+            String reservationId,
+            Instant occurredAt
     ) {}
 
     public record StockRejectedPayload(
-        String eventId,
-        Long orderId,
-        String reason,
-        List<Long> insufficientProductIds,
-        Instant occurredAt
+            String eventId,
+            Long orderId,
+            String reason,
+            List<Long> insufficientProductIds,
+            Instant occurredAt
+    ) {}
+
+    public record OrderCompletedPayload(
+            String eventId,
+            Long orderId,
+            String paymentId,
+            Instant occurredAt
     ) {}
 }
