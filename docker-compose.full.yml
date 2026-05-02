@@ -61,13 +61,15 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/ecommerce
+      KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
     depends_on:
       config-server:
         condition: service_healthy
       postgres:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
     networks:
       - n11-network
 
@@ -206,6 +208,8 @@ services:
       EUREKA_URI: http://eureka-server:8761/eureka
       CONFIG_URI: http://config-server:8762
       KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/ecommerce
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       user-service:
         condition: service_started
