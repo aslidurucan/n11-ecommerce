@@ -1,6 +1,5 @@
 package com.n11bootcamp.gateway.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -9,22 +8,17 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 
-import java.util.List;
-
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
-    @Value("${app.security.public-paths}")
-    private List<String> publicPaths;
-
-    @Value("${app.security.public-get-paths}")
-    private List<String> publicGetPaths;
-
     private final CorsConfigurationSource corsConfigurationSource;
+    private final AppSecurityProperties securityProperties;
 
-    public SecurityConfig(CorsConfigurationSource corsConfigurationSource) {
+    public SecurityConfig(CorsConfigurationSource corsConfigurationSource,
+                          AppSecurityProperties securityProperties) {
         this.corsConfigurationSource = corsConfigurationSource;
+        this.securityProperties = securityProperties;
     }
 
     @Bean
@@ -41,10 +35,10 @@ public class SecurityConfig {
             ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges.pathMatchers(HttpMethod.OPTIONS).permitAll();
 
-        publicGetPaths.forEach(path ->
+        securityProperties.getPublicGetPaths().forEach(path ->
                 exchanges.pathMatchers(HttpMethod.GET, path).permitAll());
 
-        publicPaths.forEach(path ->
+        securityProperties.getPublicPaths().forEach(path ->
                 exchanges.pathMatchers(path).permitAll());
 
         exchanges.anyExchange().authenticated();
