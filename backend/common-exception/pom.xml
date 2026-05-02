@@ -55,5 +55,22 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <!--
+                common-exception bir kutuphane modulu (main class yok).
+                Jib bu modulu container'a paketlemeye calismasin diye
+                explicitly skip ediyoruz. Servis modulleri normal Jib
+                ile container'a donusmeye devam eder.
+            -->
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
