@@ -33,14 +33,14 @@ public class OrderController {
     private final OrderService orderService;
 
     @Operation(
-        summary = "Yeni sipariş oluştur",
-        description = "Idempotency-Key header ile çağrılır. Aynı key'le tekrar çağrıldığında yeni sipariş oluşturulmaz, mevcut döner."
+            summary = "Yeni sipariş oluştur",
+            description = "Idempotency-Key header ile çağrılır. Aynı key'le tekrar çağrıldığında yeni sipariş oluşturulmaz, mevcut döner."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Sipariş başarıyla oluşturuldu"),
-        @ApiResponse(responseCode = "400", description = "Geçersiz istek verisi (validation hatası)",
-            content = @Content(schema = @Schema(implementation = org.springframework.http.ProblemDetail.class))),
-        @ApiResponse(responseCode = "401", description = "Kimlik doğrulama gerekli")
+            @ApiResponse(responseCode = "201", description = "Sipariş başarıyla oluşturuldu"),
+            @ApiResponse(responseCode = "400", description = "Geçersiz istek verisi (validation hatası)",
+                    content = @Content(schema = @Schema(implementation = org.springframework.http.ProblemDetail.class))),
+            @ApiResponse(responseCode = "401", description = "Kimlik doğrulama gerekli")
     })
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(
@@ -56,8 +56,8 @@ public class OrderController {
 
     @Operation(summary = "Sipariş detayı")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Sipariş bulundu"),
-        @ApiResponse(responseCode = "404", description = "Sipariş bulunamadı")
+            @ApiResponse(responseCode = "200", description = "Sipariş bulundu"),
+            @ApiResponse(responseCode = "404", description = "Sipariş bulunamadı")
     })
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponse> getOrder(@PathVariable Long id) {
@@ -75,11 +75,11 @@ public class OrderController {
 
     @Operation(summary = "Tüm siparişler — sadece ADMIN")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Tüm siparişler"),
-        @ApiResponse(responseCode = "403", description = "ADMIN yetkisi gerekli")
+            @ApiResponse(responseCode = "200", description = "Tüm siparişler"),
+            @ApiResponse(responseCode = "403", description = "ADMIN yetkisi gerekli")
     })
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('CLIENT_ADMIN')")
     public ResponseEntity<Page<OrderResponse>> allOrders(
             @Parameter(hidden = true) @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(orderService.findAllOrders(pageable));

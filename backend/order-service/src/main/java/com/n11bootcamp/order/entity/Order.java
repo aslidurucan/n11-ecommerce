@@ -69,7 +69,7 @@ public class Order {
     @Column(name = "payment_failure_reason", length = 500)
     private String paymentFailureReason;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
 

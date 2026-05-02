@@ -140,7 +140,7 @@ class OrderControllerTest {
         when(orderService.findAllOrders(any())).thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/orders")
-                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_CLIENT_ADMIN"))))
                 .andExpect(status().isOk());
     }
 

@@ -7,6 +7,7 @@ import com.n11bootcamp.order.dto.CardRequest;
 import com.n11bootcamp.order.entity.Order;
 import com.n11bootcamp.order.entity.OrderItem;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -33,6 +34,20 @@ public class IyzicoPaymentServiceImpl implements IyzicoPaymentService {
 
     @Value("${iyzico.buyer.default-ip:127.0.0.1}")
     private String defaultBuyerIp;
+
+    /**
+     * Başlangıçta yapılandırma doğrulaması: sandbox dışında 127.0.0.1 kullanılmamalı.
+     * iyzico, alıcı IP'si 127.0.0.1 olan işlemleri reddedebilir.
+     * Production'da iyzico.buyer.default-ip değerini gerçek IP ile ezmek için
+     * IYZICO_BUYER_DEFAULT_IP ortam değişkenini kullanın.
+     */
+    @PostConstruct
+    void validateConfig() {
+        if ("127.0.0.1".equals(defaultBuyerIp) && !baseUrl.contains("sandbox")) {
+            log.warn("[IYZICO] iyzico.buyer.default-ip is '127.0.0.1' but baseUrl does not look like sandbox: {}. " +
+                     "Set IYZICO_BUYER_DEFAULT_IP env var to the real buyer IP for production.", baseUrl);
+        }
+    }
 
     @Override
     @CircuitBreaker(name = CB_NAME, fallbackMethod = "chargeFallback")
