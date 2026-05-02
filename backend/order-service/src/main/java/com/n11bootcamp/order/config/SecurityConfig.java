@@ -29,15 +29,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .anyRequest().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt.jwtAuthenticationConverter(keycloakJwtAuthenticationConverter()))
-            );
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/actuator/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(keycloakJwtAuthenticationConverter()))
+                );
         return http.build();
     }
 
@@ -47,8 +54,8 @@ public class SecurityConfig {
             Collection<GrantedAuthority> realmRoles = extractRealmRoles(jwt);
             Collection<GrantedAuthority> scopeAuthorities = scopes.convert(jwt);
             Set<GrantedAuthority> all = Stream.concat(
-                Optional.ofNullable(scopeAuthorities).orElseGet(Collections::emptyList).stream(),
-                realmRoles.stream()
+                    Optional.ofNullable(scopeAuthorities).orElseGet(Collections::emptyList).stream(),
+                    realmRoles.stream()
             ).collect(Collectors.toSet());
             return new JwtAuthenticationToken(jwt, all, jwt.getClaimAsString("preferred_username"));
         };
@@ -61,7 +68,7 @@ public class SecurityConfig {
         List<String> roles = (List<String>) realmAccess.get("roles");
         if (roles == null) return List.of();
         return roles.stream()
-            .map(r -> new SimpleGrantedAuthority("ROLE_" + r.toUpperCase(Locale.ENGLISH)))
-            .collect(Collectors.toList());
+                .map(r -> new SimpleGrantedAuthority("ROLE_" + r.toUpperCase(Locale.ENGLISH)))
+                .collect(Collectors.toList());
     }
 }

@@ -17,22 +17,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * Cart-service Spring Security konfigürasyonu.
- *
- * Bu servis Gateway'in arkasında çalışır. Resource server pattern uygulanır.
- *
- * Public endpoint'ler:
- *   - /actuator/health
- *   - /swagger-ui/**, /v3/api-docs/**
- *
- * Diğer her şey JWT gerektirir.
- *
- * Sorumluluk ayrımı:
- *  1. filterChain()                  → HTTP authorization rules
- *  2. jwtAuthenticationConverter()   → JWT → Spring authorities
- *  3. extractKeycloakRealmRoles()    → Keycloak-specific claim parse
- */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -44,35 +28,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
-                .anyRequest().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
-            );
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/actuator/health",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                );
         return http.build();
     }
 
-    /**
-     * JWT'yi Spring Security Authentication objesine çevirir.
-     * Default converter scope'lara bakar; biz Keycloak realm rolleri istiyoruz.
-     */
     private JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(this::extractKeycloakRealmRoles);
         return converter;
     }
 
-    /**
-     * Keycloak JWT'sinde roller şu yapıda gelir:
-     *   { "realm_access": { "roles": ["USER", "ADMIN"] } }
-     *
-     * Spring Security konvansiyonu: authority adı "ROLE_" prefix + büyük harf.
-     * Örnek: "USER" → "ROLE_USER" → @PreAuthorize("hasRole('USER')") çalışır.
-     */
     private Collection<GrantedAuthority> extractKeycloakRealmRoles(Jwt jwt) {
         Map<String, Object> realmAccess = jwt.getClaim(CLAIM_REALM_ACCESS);
         if (realmAccess == null) {
@@ -85,9 +65,9 @@ public class SecurityConfig {
         }
 
         return rolesCollection.stream()
-            .map(role -> ROLE_PREFIX + role.toString().toUpperCase(Locale.ENGLISH))
-            .map(SimpleGrantedAuthority::new)
-            .map(authority -> (GrantedAuthority) authority)
-            .toList();
+                .map(role -> ROLE_PREFIX + role.toString().toUpperCase(Locale.ENGLISH))
+                .map(SimpleGrantedAuthority::new)
+                .map(authority -> (GrantedAuthority) authority)
+                .toList();
     }
 }
