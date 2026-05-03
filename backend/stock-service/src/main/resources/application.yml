@@ -18,7 +18,6 @@ spring:
         jdbc.time_zone: UTC
   flyway:
     enabled: true
-  # Redis — stok cache
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -26,7 +25,7 @@ spring:
   cache:
     type: redis
     redis:
-      time-to-live: 300000  # 5 dakika (ms)
+      time-to-live: 300000
   security:
     oauth2:
       resourceserver:
@@ -34,7 +33,6 @@ spring:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}
           jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}/protocol/openid-connect/certs
 
-# Swagger
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -44,12 +42,6 @@ springdoc:
     title: Stock Service API
     version: 1.0.0
 
-# ========================================
-# EXCEPTION HANDLING — Verbose Flag
-# ========================================
-# Production'da exception detayları (class adı, cause) API cevabında gizleniyor
-# (OWASP A09:2021 — bilgi sızdırma riskine karşı). Loglar her zaman tam detay.
-# Dev'de açmak için: EXCEPTION_VERBOSE=true env var.
 app:
   exception:
     verbose: ${EXCEPTION_VERBOSE:false}

@@ -58,7 +58,7 @@ class OrderControllerTest {
         mockMvc.perform(post("/api/orders")
                         .with(jwt())
                         .header("X-User-Id", "user-1")
-                        .header("Idempotency-Key", "test-key-abc-123")  // ← EKLENDİ
+                        .header("Idempotency-Key", "test-key-abc-123")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -72,7 +72,6 @@ class OrderControllerTest {
         mockMvc.perform(post("/api/orders")
                         .with(jwt())
                         .header("X-User-Id", "user-1")
-                        // Idempotency-Key bilerek YOK
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());

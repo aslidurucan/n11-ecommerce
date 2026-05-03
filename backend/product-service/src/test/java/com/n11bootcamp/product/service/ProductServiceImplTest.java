@@ -136,6 +136,46 @@ class ProductServiceImplTest {
     }
 
     @Test
+    void getCategories_returnsDistinctCategoriesFromRepository() {
+        List<String> expected = List.of("Bilgisayar", "Ses", "Spor");
+        when(productRepository.findDistinctCategories()).thenReturn(expected);
+
+        List<String> result = productService.getCategories();
+
+        assertThat(result).containsExactlyElementsOf(expected);
+        verify(productRepository).findDistinctCategories();
+    }
+
+    @Test
+    void getCategories_whenNoActiveProducts_returnsEmptyList() {
+        when(productRepository.findDistinctCategories()).thenReturn(List.of());
+
+        List<String> result = productService.getCategories();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getBrands_returnsDistinctBrandsFromRepository() {
+        List<String> expected = List.of("Apple", "Samsung", "Sony");
+        when(productRepository.findDistinctBrands()).thenReturn(expected);
+
+        List<String> result = productService.getBrands();
+
+        assertThat(result).containsExactlyElementsOf(expected);
+        verify(productRepository).findDistinctBrands();
+    }
+
+    @Test
+    void getBrands_whenNoActiveProducts_returnsEmptyList() {
+        when(productRepository.findDistinctBrands()).thenReturn(List.of());
+
+        List<String> result = productService.getBrands();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     void listProducts_withCategoryFilter_returnsPagedResult() {
         Product product = buildProduct(1L, "Elektronik", "Apple", new BigDecimal("1000.00"));
         ProductResponse response = buildResponse(1L, "iPhone", "Elektronik");

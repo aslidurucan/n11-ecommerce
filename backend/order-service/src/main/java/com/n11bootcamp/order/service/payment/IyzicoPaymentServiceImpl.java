@@ -28,19 +28,12 @@ public class IyzicoPaymentServiceImpl implements IyzicoPaymentService {
     @Value("${iyzico.secret-key}") private String secretKey;
     @Value("${iyzico.base-url}")   private String baseUrl;
 
-    // Sandbox varsayılanları — production'da user-service'ten gerçek değerler alınmalı
     @Value("${iyzico.buyer.default-identity-number:11111111111}")
     private String defaultIdentityNumber;
 
     @Value("${iyzico.buyer.default-ip:127.0.0.1}")
     private String defaultBuyerIp;
 
-    /**
-     * Başlangıçta yapılandırma doğrulaması: sandbox dışında 127.0.0.1 kullanılmamalı.
-     * iyzico, alıcı IP'si 127.0.0.1 olan işlemleri reddedebilir.
-     * Production'da iyzico.buyer.default-ip değerini gerçek IP ile ezmek için
-     * IYZICO_BUYER_DEFAULT_IP ortam değişkenini kullanın.
-     */
     @PostConstruct
     void validateConfig() {
         if ("127.0.0.1".equals(defaultBuyerIp) && !baseUrl.contains("sandbox")) {
@@ -68,8 +61,6 @@ public class IyzicoPaymentServiceImpl implements IyzicoPaymentService {
         log.error("[CB OPEN] Iyzico circuit breaker OPEN for order {} — {}", order.getId(), ex.getMessage());
         return IyzicoPaymentService.PaymentResult.failure("Payment service temporarily unavailable. Please try again later.");
     }
-
-    // ======================== PRIVATE ========================
 
     private Options buildOptions() {
         Options options = new Options();

@@ -21,17 +21,13 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsSource()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Chat endpoint'leri public
                         .requestMatchers("/api/v1/chat/**").permitAll()
-                        // Swagger
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
-                        // Actuator
                         .requestMatchers("/actuator/**").permitAll()
-                        // Diğer her şey: authenticated
                         .anyRequest().authenticated()
                 );
 

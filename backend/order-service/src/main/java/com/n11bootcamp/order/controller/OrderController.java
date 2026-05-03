@@ -49,7 +49,6 @@ public class OrderController {
             @RequestHeader(HEADER_IDEMPOTENCY) String idempotencyKey,
             @RequestBody @Valid CreateOrderRequest request) {
 
-        // idempotencyKey null gelebilir — karar OrderService içinde verilir (iş mantığı)
         OrderResponse response = orderService.createOrder(userId, username, idempotencyKey, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

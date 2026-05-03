@@ -109,7 +109,6 @@ public class StockServiceImpl implements StockService {
     @Override
     @Transactional
     public void releaseStock(Long orderId) {
-        // Pessimistic lock ile al — duplicate PaymentFailedEvent race condition koruması
         List<StockReservation> reservations = reservationRepo.findByOrderIdForUpdate(orderId);
 
         if (reservations.isEmpty()) {
@@ -128,7 +127,6 @@ public class StockServiceImpl implements StockService {
     @Override
     @Transactional
     public void commitReservation(Long orderId) {
-        // Pessimistic lock ile al — duplicate OrderCompletedEvent race condition koruması
         List<StockReservation> reservations = reservationRepo.findByOrderIdForUpdate(orderId);
 
         if (reservations.isEmpty()) {

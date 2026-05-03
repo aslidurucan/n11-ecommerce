@@ -6,17 +6,6 @@ import org.springframework.data.jpa.domain.Specification;
 import java.math.BigDecimal;
 import java.util.Locale;
 
-/**
- * Dinamik filtreleme için Specification factory.
- *
- * <p>Tüm string karşılaştırmaları case-insensitive — DB tarafında cb.lower(),
- * uygulama tarafında <code>toLowerCase(Locale.ENGLISH)</code>.</p>
- *
- * <p><b>Niye Locale.ENGLISH?</b> Türkçe locale'de "İSTANBUL".toLowerCase() Türkçe
- * dotted-i kuralları uygular ("i̇stanbul"). Bu DB'deki standart küçük harfle
- * eşleşmez. Locale.ENGLISH ile bu sorun yok — JVM locale'inden bağımsız,
- * portable davranış. User-service ve stock-service ile tutarlı.</p>
- */
 public class ProductSpecification {
 
     private ProductSpecification() {}

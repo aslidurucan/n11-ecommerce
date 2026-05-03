@@ -26,8 +26,6 @@ public class CreateOrderRequest {
     @NotNull(message = "Kart bilgisi zorunlu")
     private CardRequest card;
 
-    // ======================== İÇ SINIF ========================
-
     @Data
     public static class OrderItemRequest {
 
@@ -39,19 +37,11 @@ public class CreateOrderRequest {
         @Positive(message = "Miktar en az 1 olmalı")
         private Integer quantity;
 
-        /**
-         * unitPrice: Frontend'den gelir ama server-side cross-check yapılır.
-         * @NotNull eklendi: null gelirse calculateTotal() NullPointerException fırlatırdı.
-         * @Positive: 0 veya negatif fiyat geçersiz.
-         *
-         * Not: Fiyat manipülasyonu koruması OrderServiceImpl.calculateTotal()'da
-         * product-service'ten alınan gerçek fiyatla karşılaştırılacak (ileride).
-         */
         @NotNull(message = "Birim fiyat zorunlu")
         @Positive(message = "Birim fiyat pozitif olmalı")
         private BigDecimal unitPrice;
 
         @NotBlank(message = "Ürün adı zorunlu (snapshot için DB'de NOT NULL)")
-        private String productName; // sipariş geçmişi için snapshot — zorunlu
+        private String productName;
     }
 }

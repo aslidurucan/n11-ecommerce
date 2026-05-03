@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity  // @PreAuthorize için
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean

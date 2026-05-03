@@ -17,14 +17,6 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
-/**
- * Thymeleaf-based HTML mail service.
- *
- * <p><b>Hata yönetimi:</b> sendHtml() metodu hata durumunda exception fırlatır
- * (önceki implementation swallow ediyordu — mail kaybı bug'ı). Caller (RabbitListener)
- * exception görünce mesajı NACK edip DLQ'ya gönderir → Spring AMQP retry mekanizması
- * devreye girer.</p>
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -58,12 +50,6 @@ public class ThymeleafMailService implements MailService {
             "emails/order-cancelled", ctx);
     }
 
-    /**
-     * HTML mail gönderir. Hata durumunda RuntimeException fırlatır
-     * — RabbitListener bunu görüp DLQ'ya gönderir.
-     *
-     * @throws IllegalStateException mail gönderme başarısız (SMTP, template, vs.)
-     */
     private void sendHtml(String to, String subject, String template, Context ctx) {
         try {
             String html = templateEngine.process(template, ctx);

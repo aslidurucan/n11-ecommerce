@@ -6,16 +6,6 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-/**
- * WebSocket / STOMP konfigürasyonu.
- *
- * <p><b>Güvenlik:</b> setAllowedOriginPatterns yml'den whitelist okur.
- * Cross-Site WebSocket Hijacking (CSWSH) koruması — sadece bilinen
- * domain'lerden bağlantı kabul eder.</p>
- *
- * <p>Production deploy ederken yml'e gerçek domain eklenmeli, "*" KESİNLİKLE
- * kullanılmamalı (tüm sitelerden bağlantı = privacy ihlali).</p>
- */
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {

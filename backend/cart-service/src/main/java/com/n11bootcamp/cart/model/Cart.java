@@ -13,12 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Cart aggregate — Rich Domain Model.
- *
- * <p>Tüm business kuralları (validation, üst sınır, merge mantığı) entity'de.
- * Service layer sadece Redis I/O yapar, business kuralları burada.</p>
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,10 +20,6 @@ import java.util.Optional;
 @Builder
 public class Cart {
 
-    /**
-     * Tek bir ürün için maksimum sepet miktarı.
-     * E-ticaret standart pratiği — bot/abuse önleme + UX.
-     */
     public static final int MAX_QUANTITY_PER_ITEM = 99;
 
     private String userId;
@@ -39,10 +29,6 @@ public class Cart {
 
     private Instant updatedAt;
 
-    /**
-     * Yeni item ekler veya varsa quantity'sini birleştirir.
-     * MAX_QUANTITY_PER_ITEM aşılırsa hata.
-     */
     public void addOrMergeItem(CartItem newItem) {
         validatePositiveQuantity(newItem.getQuantity());
 
@@ -58,10 +44,6 @@ public class Cart {
         this.updatedAt = Instant.now();
     }
 
-    /**
-     * Quantity günceller. 0 veya negatif kabul etmez (silmek için removeItem kullan).
-     * MAX_QUANTITY_PER_ITEM aşılırsa hata.
-     */
     public void updateItemQuantity(Long productId, int quantity) {
         validatePositiveQuantity(quantity);
         validateMaxQuantity(quantity, productId);
@@ -94,10 +76,6 @@ public class Cart {
     public int itemCount() {
         return items.stream().mapToInt(CartItem::getQuantity).sum();
     }
-
-    // ====================================================================
-    // PRIVATE
-    // ====================================================================
 
     private Optional<CartItem> findItem(Long productId) {
         return items.stream()

@@ -113,7 +113,6 @@ public class KeycloakAdminService implements IdentityProviderService {
     }
 
 
-    /** Compensation için — hata fırlatmaz, sadece log atar. */
     private void tryDeleteUser(String userId) {
         try {
             keycloak.realm(realm).users().delete(userId);

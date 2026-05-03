@@ -31,8 +31,6 @@ notification:
     allowed-origins:
       - "http://localhost:*"
       - "http://127.0.0.1:*"
-      # Production: aşağıyı uncomment et + gerçek domain'i ekle
-      # - "https://yourapp.com"
 
 springdoc:
   api-docs:

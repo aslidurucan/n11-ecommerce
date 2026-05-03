@@ -13,7 +13,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: validate  # Schema'yı Flyway yönetiyor
+      ddl-auto: validate
     properties:
       hibernate:
         jdbc:
@@ -34,22 +34,18 @@ spring:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}
           jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}/protocol/openid-connect/certs
 
-# Mock payment — true: her zaman başarılı, false: gerçek Iyzico
 payment:
   mock: false
 
-# Iyzico — Anahtarları .env dosyasından veya ortam değişkenlerinden oku
 iyzico:
   api-key: ${IYZICO_API_KEY}
   secret-key: ${IYZICO_SECRET_KEY}
   base-url: ${IYZICO_BASE_URL:https://sandbox-api.iyzipay.com}
 
-# Outbox publisher
 outbox:
   publisher:
     fixed-delay-ms: 2000
 
-# OpenAPI
 springdoc:
   api-docs:
     path: /v3/api-docs

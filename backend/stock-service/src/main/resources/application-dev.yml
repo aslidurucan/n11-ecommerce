@@ -1,4 +1,3 @@
-# DEV PROFİLİ — JWT bypass
 spring:
   autoconfigure:
     exclude:

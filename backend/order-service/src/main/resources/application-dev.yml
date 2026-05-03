@@ -1,6 +1,3 @@
-# DEV PROFİLİ — JWT bypass, direkt test için
-# Kullanım: IDE'de Active Profiles: dev  YA DA  java -jar ... --spring.profiles.active=dev
-
 spring:
   autoconfigure:
     exclude:

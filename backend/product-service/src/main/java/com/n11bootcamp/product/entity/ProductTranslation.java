@@ -18,13 +18,12 @@ public class ProductTranslation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Bidirectional ilişki: ProductTranslation "sahibi" (FK'yı o taşır)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
     @Column(name = "language", nullable = false, length = 5)
-    private String language;  // "tr", "en", "de"
+    private String language;
 
     @Column(name = "name", nullable = false, length = 255)
     private String name;

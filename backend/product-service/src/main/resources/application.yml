@@ -33,8 +33,7 @@ spring:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}
           jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}/protocol/openid-connect/certs
 
-# Redis cache TTL
-spring.cache.redis.time-to-live: 600000  # 10 dakika (ms)
+spring.cache.redis.time-to-live: 600000
 
 springdoc:
   api-docs:

@@ -83,7 +83,6 @@ spring:
           predicates:
             - Path=/api/v1/chat/**
 
-  # Keycloak Resource Server
   security:
     oauth2:
       resourceserver:

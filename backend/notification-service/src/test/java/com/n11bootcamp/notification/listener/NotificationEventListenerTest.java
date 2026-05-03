@@ -69,12 +69,10 @@ class NotificationEventListenerTest {
         doThrow(new RuntimeException("SMTP connection failed"))
                 .when(mailService).sendOrderCompleted(any(OrderCompletedEvent.class));
 
-        // Mail hatası bubble up eder — RabbitMQ NACK → DLQ retry
         assertThatThrownBy(() -> listener.onOrderCompleted(event))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("SMTP connection failed");
 
-        // Kanal izolasyonu: WS önce çağrılır (best-effort), mail sonra (kritik)
         verify(wsService, times(1)).pushOrderCompleted(event);
         verify(mailService, times(1)).sendOrderCompleted(event);
     }
@@ -90,8 +88,6 @@ class NotificationEventListenerTest {
         doThrow(new RuntimeException("WebSocket session closed"))
                 .when(wsService).pushOrderCancelled(any(OrderCancelledEvent.class));
 
-        // WS hatası bubble up ETMEZ — kullanıcı zaten offline olabilir
-        // Method normal tamamlanır, mail yine de gönderilir
         listener.onOrderCancelled(event);
 
         verify(wsService, times(1)).pushOrderCancelled(event);

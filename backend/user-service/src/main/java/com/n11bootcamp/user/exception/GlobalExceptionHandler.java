@@ -25,7 +25,6 @@ public class GlobalExceptionHandler extends BaseExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
     public ProblemDetail handleIllegalState(IllegalStateException ex) {
-        // "Identity provider unavailable" ve benzeri iç sistem hataları
         log.error("Internal state error: {}", ex.getMessage(), ex);
         return problemDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), "service-unavailable");
     }

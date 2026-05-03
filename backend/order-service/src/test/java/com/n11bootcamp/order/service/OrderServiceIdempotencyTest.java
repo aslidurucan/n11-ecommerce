@@ -85,7 +85,6 @@ class OrderServiceIdempotencyTest {
     @Test
     @DisplayName("Aynı idempotency key tekrar gelirse: mevcut order döner, hiçbir yan etki yok")
     void createOrder_whenSameKeyReused_returnsExistingOrderWithoutSideEffects() {
-        // GIVEN: bu key zaten var, repo onu döndürüyor
         Order existingOrder = buildOrder(42L);
         when(orderRepository.findByIdempotencyKey(IDEMPOTENCY_KEY))
                 .thenReturn(Optional.of(existingOrder));

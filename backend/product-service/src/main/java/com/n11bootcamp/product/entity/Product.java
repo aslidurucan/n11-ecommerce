@@ -31,7 +31,6 @@ public class Product {
     @Column(name = "brand", length = 100)
     private String brand;
 
-    // float/double değil — para için BigDecimal zorunlu
     @Column(name = "base_price", nullable = false, precision = 19, scale = 2)
     private BigDecimal basePrice;
 

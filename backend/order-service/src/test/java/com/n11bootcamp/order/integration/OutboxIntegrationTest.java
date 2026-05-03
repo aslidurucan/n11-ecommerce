@@ -34,25 +34,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Outbox Pattern — Gerçek RabbitMQ Entegrasyon Testi
- *
- * <p>Outbox pattern'in en kritik garantisini doğrular:
- * <em>"DB'ye yazılan event RabbitMQ'ya iletilir."</em></p>
- *
- * <p>Akış:</p>
- * <ol>
- *   <li>Outbox event doğrudan DB'ye yazılır ({@code published=false})</li>
- *   <li>{@link OutboxPublisher#publishPending()} manuel olarak tetiklenir</li>
- *   <li>Mesajın gerçek RabbitMQ queue'suna ulaşıp ulaşmadığı doğrulanır</li>
- *   <li>Event'in {@code published=true} olduğu DB'den verify edilir</li>
- * </ol>
- *
- * <p><strong>Neden {@code @Transactional} yok?</strong><br>
- * {@code OutboxPublisher.publishPending()} {@code REQUIRES_NEW} kullanır.
- * Eğer test transaction'ı açık olsaydı, publisher yeni transaction'ında
- * henüz commit edilmemiş verileri göremezdi.</p>
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Testcontainers
@@ -122,14 +103,9 @@ class OutboxIntegrationTest {
         outboxEventRepository.deleteAll();
     }
 
-    // =========================================================
-    // OUTBOX → RABBITMQ HAT YOLU
-    // =========================================================
-
     @Test
     @DisplayName("Outbox event DB'ye yazılınca publisher onu RabbitMQ'ya iletir")
     void publishPending_outboxEventDeliveredToRabbitMQ() {
-        // 1. Test queue oluştur — publisher routing key ile bağlı
         String testQueue = "test.outbox.queue." + System.currentTimeMillis();
         rabbitAdmin.declareQueue(new Queue(testQueue, false, false, true));
         rabbitAdmin.declareBinding(
@@ -140,7 +116,6 @@ class OutboxIntegrationTest {
                         stockReserveRoutingKey,
                         null));
 
-        // 2. Outbox event'i commit'li transaction'da kaydet
         String payload = "{\"orderId\":42,\"userId\":\"user-1\"}";
         transactionTemplate.execute(status -> {
             outboxEventRepository.save(OutboxEvent.builder()
@@ -153,15 +128,12 @@ class OutboxIntegrationTest {
             return null;
         });
 
-        // 3. Outbox publisher'ı manuel tetikle
         outboxPublisher.publishPending();
 
-        // 4. Mesaj gerçekten queue'ya ulaştı mı?
         Message received = rabbitTemplate.receive(testQueue, 3000);
         assertThat(received).isNotNull();
         assertThat(new String(received.getBody())).contains("\"orderId\":42");
 
-        // 5. DB'de event published=true olarak işaretlendi mi?
         List<OutboxEvent> events = outboxEventRepository.findAll();
         assertThat(events).hasSize(1);
         assertThat(events.get(0).getPublished()).isTrue();
@@ -182,7 +154,6 @@ class OutboxIntegrationTest {
                         stockReserveRoutingKey,
                         null));
 
-        // 3 event commit'li kaydet
         transactionTemplate.execute(status -> {
             for (int i = 1; i <= 3; i++) {
                 outboxEventRepository.save(OutboxEvent.builder()
@@ -198,12 +169,10 @@ class OutboxIntegrationTest {
 
         outboxPublisher.publishPending();
 
-        // 3 mesaj queue'ya ulaşmış mı?
         int received = 0;
         while (rabbitTemplate.receive(testQueue, 1000) != null) received++;
         assertThat(received).isEqualTo(3);
 
-        // Tüm event'ler published=true
         assertThat(outboxEventRepository.findAll())
                 .hasSize(3)
                 .allSatisfy(e -> assertThat(e.getPublished()).isTrue());

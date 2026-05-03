@@ -22,10 +22,8 @@ public class RabbitMQConfig {
     @Value("${saga.rabbit.routingKeys.stockReserved}")  private String stockReservedRk;
     @Value("${saga.rabbit.routingKeys.stockRejected}")  private String stockRejectedRk;
 
-    // ===== EXCHANGE =====
     @Bean public TopicExchange sagaExchange() { return new TopicExchange(exchange, true, false); }
 
-    // ===== DLX/DLQ =====
     @Bean public TopicExchange sagaDlx() { return new TopicExchange(dlxName, true, false); }
 
     @Bean public Queue sagaDlq() { return QueueBuilder.durable(dlqName).build(); }
@@ -34,7 +32,6 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(sagaDlq()).to(sagaDlx()).with("#");
     }
 
-    // ===== STOCK RESERVED =====
     @Bean
     public Queue stockReservedQ() {
         return QueueBuilder.durable(stockReservedQueue)
@@ -48,7 +45,6 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(stockReservedQ()).to(sagaExchange()).with(stockReservedRk);
     }
 
-    // ===== STOCK REJECTED =====
     @Bean
     public Queue stockRejectedQ() {
         return QueueBuilder.durable(stockRejectedQueue)
@@ -62,7 +58,6 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(stockRejectedQ()).to(sagaExchange()).with(stockRejectedRk);
     }
 
-    // ===== JSON CONVERTER =====
     @Bean
     public MessageConverter messageConverter(ObjectMapper objectMapper) {
         Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter(objectMapper);

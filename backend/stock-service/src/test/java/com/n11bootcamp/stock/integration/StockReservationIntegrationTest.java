@@ -36,9 +36,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("StockService — Entegrasyon Testleri (gerçek PostgreSQL + pessimistic lock)")
 class StockReservationIntegrationTest {
 
-    // =========================================================
-    // Güvenlik bypass
-    // =========================================================
     @TestConfiguration
     static class SecurityOverride {
         @Bean @Primary
@@ -53,9 +50,6 @@ class StockReservationIntegrationTest {
         }
     }
 
-    // =========================================================
-    // PostgreSQL Testcontainer
-    // =========================================================
     @Container
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:16-alpine")
@@ -85,10 +79,6 @@ class StockReservationIntegrationTest {
         stockRepo.deleteAll();
     }
 
-    // =========================================================
-    // SETUP HELPERS
-    // =========================================================
-
     private ProductStock createStock(Long productId, int available) {
         UpdateStockRequest req = new UpdateStockRequest();
         req.setProductId(productId);
@@ -96,10 +86,6 @@ class StockReservationIntegrationTest {
         stockService.setStock(req);
         return stockRepo.findById(productId).orElseThrow();
     }
-
-    // =========================================================
-    // RESERVE — HAPPY PATH
-    // =========================================================
 
     @Test
     @DisplayName("Yeterli stok varsa rezervasyon yapılır, stok azalır, kayıt oluşur")
@@ -114,10 +100,8 @@ class StockReservationIntegrationTest {
 
         List<Long> insufficient = stockService.reserveStock(1L, items);
 
-        // Yetersiz ürün yok
         assertThat(insufficient).isEmpty();
 
-        // DB'de stok azalmış mı?
         ProductStock stock101 = stockRepo.findById(101L).orElseThrow();
         ProductStock stock102 = stockRepo.findById(102L).orElseThrow();
         assertThat(stock101.getAvailableQuantity()).isEqualTo(7);
@@ -125,43 +109,31 @@ class StockReservationIntegrationTest {
         assertThat(stock102.getAvailableQuantity()).isEqualTo(3);
         assertThat(stock102.getReservedQuantity()).isEqualTo(2);
 
-        // Rezervasyon kayıtları oluşmuş mu?
         List<StockReservation> reservations = reservationRepo.findAll();
         assertThat(reservations).hasSize(2);
         assertThat(reservations).allSatisfy(r -> assertThat(r.getOrderId()).isEqualTo(1L));
     }
 
-    // =========================================================
-    // RESERVE — INSUFFICIENT STOCK
-    // =========================================================
-
     @Test
     @DisplayName("Yetersiz stok varsa tüm-ya-hiç prensibi: hiçbir stok değişmez")
     void reserveStock_whenInsufficient_allOrNothingNoStockReduced() {
         createStock(101L, 5);
-        createStock(102L, 2);  // Bu yetersiz kalacak
+        createStock(102L, 2);
 
         List<ReservationItem> items = List.of(
-                new ReservationItem(101L, 3),   // yeterli
-                new ReservationItem(102L, 10)   // yetersiz!
+                new ReservationItem(101L, 3),
+                new ReservationItem(102L, 10)
         );
 
         List<Long> insufficient = stockService.reserveStock(2L, items);
 
-        // Yetersiz olan ürün ID'si döner
         assertThat(insufficient).containsExactly(102L);
 
-        // KRİTİK: Hiçbir stok değişmemiş olmalı (all-or-nothing)
         assertThat(stockRepo.findById(101L).orElseThrow().getAvailableQuantity()).isEqualTo(5);
         assertThat(stockRepo.findById(102L).orElseThrow().getAvailableQuantity()).isEqualTo(2);
 
-        // Rezervasyon kaydı oluşmamış
         assertThat(reservationRepo.count()).isZero();
     }
-
-    // =========================================================
-    // RESERVE — IDEMPOTENCY
-    // =========================================================
 
     @Test
     @DisplayName("Aynı orderId ikinci kez gelince idempotency: stok değişmez")
@@ -169,22 +141,15 @@ class StockReservationIntegrationTest {
         createStock(101L, 10);
         List<ReservationItem> items = List.of(new ReservationItem(101L, 3));
 
-        // İlk çağrı — rezerve edilir
         stockService.reserveStock(3L, items);
         assertThat(stockRepo.findById(101L).orElseThrow().getAvailableQuantity()).isEqualTo(7);
 
-        // İkinci çağrı (aynı orderId) — idempotent, stok değişmez
         List<Long> result = stockService.reserveStock(3L, items);
 
         assertThat(result).isEmpty();
         assertThat(stockRepo.findById(101L).orElseThrow().getAvailableQuantity()).isEqualTo(7);
-        // Rezervasyon sayısı hâlâ 1 — ikinci kayıt oluşmamış
         assertThat(reservationRepo.count()).isEqualTo(1);
     }
-
-    // =========================================================
-    // RELEASE
-    // =========================================================
 
     @Test
     @DisplayName("Stok serbest bırakılınca available artar, rezervasyon kaydı silinir")
@@ -192,32 +157,22 @@ class StockReservationIntegrationTest {
         createStock(101L, 10);
         stockService.reserveStock(4L, List.of(new ReservationItem(101L, 4)));
 
-        // Rezervasyon sonrası stok: 6 available, 4 reserved
         assertThat(stockRepo.findById(101L).orElseThrow().getAvailableQuantity()).isEqualTo(6);
 
-        // Release
         stockService.releaseStock(4L);
 
-        // Stok orijinal değere döndü
         assertThat(stockRepo.findById(101L).orElseThrow().getAvailableQuantity()).isEqualTo(10);
         assertThat(stockRepo.findById(101L).orElseThrow().getReservedQuantity()).isEqualTo(0);
 
-        // Rezervasyon kaydı silindi
         assertThat(reservationRepo.count()).isZero();
     }
 
     @Test
     @DisplayName("Rezervasyon yoksa release sessizce döner — exception fırlatmaz")
     void releaseStock_whenNoReservation_isNoOp() {
-        // Exception fırlatmadan tamamlanmalı
         stockService.releaseStock(999L);
-        // Hiç etki yok
         assertThat(stockRepo.count()).isZero();
     }
-
-    // =========================================================
-    // COMMIT
-    // =========================================================
 
     @Test
     @DisplayName("Ödeme onaylanınca rezervasyon commit edilir, stok kalıcı azalır")
@@ -227,18 +182,12 @@ class StockReservationIntegrationTest {
 
         stockService.commitReservation(5L);
 
-        // Available değişmemiş (zaten reserve sırasında azalmıştı)
         ProductStock stock = stockRepo.findById(101L).orElseThrow();
         assertThat(stock.getAvailableQuantity()).isEqualTo(7);
-        assertThat(stock.getReservedQuantity()).isEqualTo(0); // reserved sıfırlandı
+        assertThat(stock.getReservedQuantity()).isEqualTo(0);
 
-        // Rezervasyon kaydı silindi
         assertThat(reservationRepo.count()).isZero();
     }
-
-    // =========================================================
-    // INCREASE / DECREASE
-    // =========================================================
 
     @Test
     @DisplayName("Stok artırılınca DB'ye yansır")

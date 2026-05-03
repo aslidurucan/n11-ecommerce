@@ -1,4 +1,3 @@
-
 services:
   # ============= EUREKA SERVER =============
   eureka-server:
@@ -193,6 +192,9 @@ services:
       EUREKA_HOST: eureka-server
       CONFIG_SERVER_HOST: config-server
       KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/ecommerce
+      # Groq LLM — opsiyonel. Bos birakilirsa keyword fallback devreye girer.
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.1-8b-instant}
     depends_on:
       config-server:
         condition: service_healthy

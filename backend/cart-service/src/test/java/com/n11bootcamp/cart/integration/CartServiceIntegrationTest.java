@@ -35,26 +35,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-/**
- * CartService — Redis Entegrasyon Testi
- *
- * <p>Gerçek bir Redis container kullanır; sepet verilerinin doğru şekilde
- * Redis'e yazıldığını ve okunduğunu doğrular.</p>
- *
- * <p>{@link ProductClient} bir Feign client olduğundan {@code @MockitoBean}
- * ile mock'lanmıştır — product-service'in ayakta olmasına gerek yoktur.</p>
- *
- * <p>Redis verileri testler arasında temizlenir ({@code @AfterEach}).</p>
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Testcontainers
 @DisplayName("CartService — Redis Entegrasyon Testleri")
 class CartServiceIntegrationTest {
 
-    // =========================================================
-    // Güvenlik bypass
-    // =========================================================
     @TestConfiguration
     static class SecurityOverride {
         @Bean @Primary
@@ -69,9 +55,6 @@ class CartServiceIntegrationTest {
         }
     }
 
-    // =========================================================
-    // Redis Testcontainer
-    // =========================================================
     @SuppressWarnings("resource")
     @Container
     static final GenericContainer<?> REDIS =
@@ -84,7 +67,6 @@ class CartServiceIntegrationTest {
         registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
     }
 
-    // ProductClient → Feign bağlantısına gerek yok
     @MockitoBean
     private ProductClient productClient;
 
@@ -101,7 +83,6 @@ class CartServiceIntegrationTest {
 
     @BeforeEach
     void setupProductClientMock() {
-        // ProductClient mock — aktif ürünler
         when(productClient.getProduct(PRODUCT_IPHONE, "tr"))
                 .thenReturn(new ProductInfo(PRODUCT_IPHONE, "iPhone 16", new BigDecimal("29999.00"), true));
         when(productClient.getProduct(PRODUCT_SAMSUNG, "tr"))
@@ -114,10 +95,6 @@ class CartServiceIntegrationTest {
         cartRepository.deleteByUserId(USER_2);
     }
 
-    // =========================================================
-    // BOŞ SEPET
-    // =========================================================
-
     @Test
     @DisplayName("Daha önce sepet oluşturulmamış kullanıcı için boş sepet döner")
     void getCart_whenNoCart_returnsEmptyCart() {
@@ -128,10 +105,6 @@ class CartServiceIntegrationTest {
         assertThat(response.grandTotal()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(response.itemCount()).isZero();
     }
-
-    // =========================================================
-    // ÜRÜN EKLEME
-    // =========================================================
 
     @Test
     @DisplayName("Ürün eklenince sepet Redis'e persist edilir")
@@ -145,9 +118,8 @@ class CartServiceIntegrationTest {
         assertThat(response.items().get(0).productId()).isEqualTo(PRODUCT_IPHONE);
         assertThat(response.items().get(0).productName()).isEqualTo("iPhone 16");
         assertThat(response.itemCount()).isEqualTo(2);
-        assertThat(response.grandTotal()).isEqualByComparingTo("59998.00"); // 2 × 29999
+        assertThat(response.grandTotal()).isEqualByComparingTo("59998.00");
 
-        // Redis'ten getCart ile tekrar oku — persist edilmiş mi?
         CartResponse fromRedis = cartService.getCart(USER_1);
         assertThat(fromRedis.items()).hasSize(1);
         assertThat(fromRedis.itemCount()).isEqualTo(2);
@@ -162,7 +134,7 @@ class CartServiceIntegrationTest {
         CartResponse response = cartService.getCart(USER_1);
 
         assertThat(response.items()).hasSize(1);
-        assertThat(response.itemCount()).isEqualTo(4); // 1 + 3
+        assertThat(response.itemCount()).isEqualTo(4);
     }
 
     @Test
@@ -174,9 +146,9 @@ class CartServiceIntegrationTest {
         CartResponse response = cartService.getCart(USER_1);
 
         assertThat(response.items()).hasSize(2);
-        assertThat(response.itemCount()).isEqualTo(3); // 1 + 2
+        assertThat(response.itemCount()).isEqualTo(3);
         assertThat(response.grandTotal())
-                .isEqualByComparingTo("65999.00"); // 29999 + 2×18000
+                .isEqualByComparingTo("65999.00");
     }
 
     @Test
@@ -191,13 +163,8 @@ class CartServiceIntegrationTest {
                 cartService.addItem(USER_1, new AddItemRequest(inactiveProductId, 1), "tr"))
                 .isInstanceOf(ProductNotAvailableException.class);
 
-        // Sepet değişmemiş
         assertThat(cartService.getCart(USER_1).items()).isEmpty();
     }
-
-    // =========================================================
-    // MİKTAR GÜNCELLEME
-    // =========================================================
 
     @Test
     @DisplayName("Miktar güncellenince Redis'teki değer değişir")
@@ -209,14 +176,9 @@ class CartServiceIntegrationTest {
 
         assertThat(updated.itemCount()).isEqualTo(5);
 
-        // Redis'ten tekrar oku
         CartResponse fromRedis = cartService.getCart(USER_1);
         assertThat(fromRedis.itemCount()).isEqualTo(5);
     }
-
-    // =========================================================
-    // ÜRÜN ÇIKARMA
-    // =========================================================
 
     @Test
     @DisplayName("Ürün çıkarılınca sepetten kalkar, Redis güncellenir")
@@ -231,10 +193,6 @@ class CartServiceIntegrationTest {
         assertThat(response.items().get(0).productId()).isEqualTo(PRODUCT_SAMSUNG);
     }
 
-    // =========================================================
-    // SEPET TEMİZLEME
-    // =========================================================
-
     @Test
     @DisplayName("Sepet temizlenince Redis'ten tamamen silinir")
     void clearCart_removedFromRedis() {
@@ -247,10 +205,6 @@ class CartServiceIntegrationTest {
         assertThat(afterClear.items()).isEmpty();
         assertThat(afterClear.grandTotal()).isEqualByComparingTo(BigDecimal.ZERO);
     }
-
-    // =========================================================
-    // KULLANICI İZOLASYONU
-    // =========================================================
 
     @Test
     @DisplayName("Farklı kullanıcıların sepetleri birbirini etkilemez")
@@ -267,7 +221,6 @@ class CartServiceIntegrationTest {
         assertThat(user2Cart.items()).hasSize(1);
         assertThat(user2Cart.items().get(0).productId()).isEqualTo(PRODUCT_SAMSUNG);
 
-        // USER_1 sepetini temizleyince USER_2 etkilenmez
         cartService.clearCart(USER_1);
         assertThat(cartService.getCart(USER_2).items()).hasSize(1);
     }

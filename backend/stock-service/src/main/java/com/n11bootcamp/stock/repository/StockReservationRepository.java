@@ -15,16 +15,6 @@ public interface StockReservationRepository extends JpaRepository<StockReservati
 
     List<StockReservation> findByOrderId(Long orderId);
 
-    /**
-     * Pessimistic lock ile rezervasyonları okur.
-     * releaseStock'ta paralel duplicate event'lere karşı race condition koruması.
-     *
-     * <p>RabbitMQ at-least-once garantisi: aynı PaymentFailedEvent iki kez gelebilir.
-     * Her iki listener da aynı anda çalışırsa, biri kilidi alır, işlemini bitirir,
-     * rezervasyonları siler. Diğeri kilidi aldığında boş liste görür, idempotent çıkar.</p>
-     *
-     * SELECT ... FROM stock_reservations WHERE order_id = ? FOR UPDATE
-     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM StockReservation r WHERE r.orderId = :orderId")
     List<StockReservation> findByOrderIdForUpdate(@Param("orderId") Long orderId);

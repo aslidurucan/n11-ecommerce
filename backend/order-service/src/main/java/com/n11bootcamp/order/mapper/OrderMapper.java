@@ -30,8 +30,6 @@ public class OrderMapper {
             .toList();
     }
 
-    // ======================== PRIVATE ========================
-
     private List<OrderResponse.Item> toItemResponses(List<OrderItem> items) {
         return items.stream().map(this::toItemResponse).toList();
     }

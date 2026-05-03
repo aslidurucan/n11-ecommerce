@@ -53,7 +53,6 @@ public class Order {
     @Builder.Default
     private String currency = "TRY";
 
-    // Shipping
     @Column(name = "ship_first_name") private String shipFirstName;
     @Column(name = "ship_last_name")  private String shipLastName;
     @Column(name = "ship_email")      private String shipEmail;
@@ -62,7 +61,6 @@ public class Order {
     @Column(name = "ship_city")       private String shipCity;
     @Column(name = "ship_country")    private String shipCountry;
 
-    // Payment
     @Column(name = "payment_id", length = 128)
     private String paymentId;
 
@@ -91,10 +89,6 @@ public class Order {
     }
 
 
-    /**
-     * Order durumunu değiştirir. Terminal state'ten (COMPLETED, CANCELLED) çıkış yasaktır.
-     * Hangi state'lerin terminal olduğunu OrderStatus.isTerminal() belirler — single source of truth.
-     */
     public void transitionTo(OrderStatus newStatus) {
         if (this.status != null && this.status.isTerminal()) {
             throw new IllegalStateException(

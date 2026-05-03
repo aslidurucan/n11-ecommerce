@@ -38,30 +38,12 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * OrderService — Sipariş Oluşturma Entegrasyon Testi
- *
- * <p>Gerçek PostgreSQL + RabbitMQ ile sipariş oluşturma, idempotency ve
- * Outbox event yazımını test eder.</p>
- *
- * <ul>
- *   <li>DB'ye gerçekten persist edildi mi?</li>
- *   <li>Outbox event aynı transaction'da yazıldı mı?</li>
- *   <li>İdempotency key aynı gelince ikinci kayıt oluşmuyor mu?</li>
- * </ul>
- *
- * <p>{@code CardCacheService} Redis gerektirdiğinden {@code @MockitoBean} ile
- * mock'lanmıştır — Redis Testcontainer'a ihtiyaç yoktur.</p>
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Testcontainers
 @DisplayName("OrderService — Sipariş Oluşturma Entegrasyon Testleri")
 class OrderCreationIntegrationTest {
 
-    // =========================================================
-    // Güvenlik bypass
-    // =========================================================
     @TestConfiguration
     static class SecurityOverride {
         @Bean @Primary
@@ -76,9 +58,6 @@ class OrderCreationIntegrationTest {
         }
     }
 
-    // =========================================================
-    // Testcontainers — Postgres + RabbitMQ
-    // =========================================================
     @Container
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:16-alpine")
@@ -99,7 +78,6 @@ class OrderCreationIntegrationTest {
         registry.add("spring.rabbitmq.port", RABBITMQ::getAmqpPort);
     }
 
-    // Redis yerine mock — bu testin odağı dışında
     @MockitoBean
     private CardCacheService cardCacheService;
 
@@ -118,10 +96,6 @@ class OrderCreationIntegrationTest {
         orderRepository.deleteAll();
     }
 
-    // =========================================================
-    // SIPARIŞ OLUŞTURMA
-    // =========================================================
-
     @Test
     @DisplayName("Sipariş oluşturulunca DB'ye persist edilir, status PENDING olur")
     void createOrder_persistedWithPendingStatus() {
@@ -133,7 +107,7 @@ class OrderCreationIntegrationTest {
 
         assertThat(response.getId()).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OrderStatus.PENDING);
-        assertThat(response.getTotalAmount()).isEqualByComparingTo("450.00"); // 3 × 150
+        assertThat(response.getTotalAmount()).isEqualByComparingTo("450.00");
 
         Optional<Order> saved = orderRepository.findById(response.getId());
         assertThat(saved).isPresent();
@@ -150,7 +124,6 @@ class OrderCreationIntegrationTest {
         OrderResponse response = orderService.createOrder(
                 "user-2", "testuser2", "idem-key-2", request);
 
-        // Outbox event'in DB'de yazılmış olması gerekir
         List<OutboxEvent> events = outboxEventRepository.findAll();
         assertThat(events).hasSize(1);
 
@@ -159,7 +132,7 @@ class OrderCreationIntegrationTest {
         assertThat(event.getAggregateId()).isEqualTo(response.getId().toString());
         assertThat(event.getEventType()).isEqualTo("OrderCreatedEvent");
         assertThat(event.getRoutingKey()).isEqualTo("order.stock.reserve.requested");
-        assertThat(event.getPublished()).isFalse();  // henüz yayınlanmadı
+        assertThat(event.getPublished()).isFalse();
         assertThat(event.getPayload()).contains("\"orderId\"");
     }
 
@@ -175,10 +148,6 @@ class OrderCreationIntegrationTest {
         assertThat(outboxEventRepository.count()).isEqualTo(2);
     }
 
-    // =========================================================
-    // IDEMPOTENCY
-    // =========================================================
-
     @Test
     @DisplayName("Aynı idempotency key ikinci kez gelince mevcut sipariş döner, yeni kayıt oluşmaz")
     void createOrder_sameIdempotencyKey_returnsExistingOrderWithoutDuplicate() {
@@ -190,19 +159,12 @@ class OrderCreationIntegrationTest {
         OrderResponse second = orderService.createOrder(
                 "user-3", "testuser3", "idem-key-dup", request);
 
-        // Aynı id döner
         assertThat(second.getId()).isEqualTo(first.getId());
 
-        // DB'de tek sipariş
         assertThat(orderRepository.count()).isEqualTo(1);
 
-        // DB'de tek Outbox event (ikincisi yazılmadı)
         assertThat(outboxEventRepository.count()).isEqualTo(1);
     }
-
-    // =========================================================
-    // VALIDASYON
-    // =========================================================
 
     @Test
     @DisplayName("Null idempotency key ile sipariş oluşturulunca IllegalArgumentException fırlar")
@@ -232,10 +194,6 @@ class OrderCreationIntegrationTest {
         assertThat(orderRepository.count()).isZero();
     }
 
-    // =========================================================
-    // DURUM GEÇİŞLERİ
-    // =========================================================
-
     @Test
     @DisplayName("Sipariş durumu PENDING → STOCK_RESERVED geçişi DB'ye yansır")
     void updateOrderStatus_transitionPersistedInDatabase() {
@@ -262,10 +220,6 @@ class OrderCreationIntegrationTest {
         assertThat(fromDb.getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(fromDb.getPaymentFailureReason()).isEqualTo("Stok yetersiz");
     }
-
-    // =========================================================
-    // YARDIMCI METODLAR
-    // =========================================================
 
     private CreateOrderRequest buildOrderRequest(String userId,
                                                   BigDecimal unitPrice, int quantity) {

@@ -10,8 +10,6 @@ import com.n11bootcamp.product.service.ProductService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -35,15 +33,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Product Service — Entegrasyon Testi
- *
- * <p>Gerçek bir PostgreSQL container başlatır ve Flyway migration'larını çalıştırır.
- * Redis cache devre dışı bırakılmıştır; yalnızca JPA/DB katmanı test edilmektedir.</p>
- *
- * <p>Her test metodu {@code @Transactional} rollback ile izole çalışır — veritabanı
- * state'i testler arasında sıfırlanır.</p>
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Testcontainers
@@ -51,15 +40,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("ProductService — Entegrasyon Testleri (gerçek PostgreSQL)")
 class ProductServiceIntegrationTest {
 
-    // =========================================================
-    // Güvenlik bypass: Keycloak bağlantısı olmadan JwtDecoder
-    // =========================================================
     @TestConfiguration
     static class SecurityOverride {
-        /**
-         * @Primary → Spring Security autoconfigure'ın oluşturduğu JwtDecoder'ı
-         * devre dışı bırakır. Testlerde Keycloak bağlantısı gerekmez.
-         */
         @Bean
         @Primary
         JwtDecoder mockJwtDecoder() {
@@ -73,9 +55,6 @@ class ProductServiceIntegrationTest {
         }
     }
 
-    // =========================================================
-    // PostgreSQL Testcontainer — tüm testlerde paylaşılır
-    // =========================================================
     @Container
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:16-alpine")
@@ -96,10 +75,6 @@ class ProductServiceIntegrationTest {
     @Autowired
     private ProductRepository productRepository;
 
-    // =========================================================
-    // CREATE
-    // =========================================================
-
     @Test
     @DisplayName("Ürün oluşturulunca DB'ye persist edilir ve id döner")
     void createProduct_persistsToDatabase() {
@@ -115,8 +90,6 @@ class ProductServiceIntegrationTest {
         assertThat(response.brand()).isEqualTo("Apple");
         assertThat(response.basePrice()).isEqualByComparingTo("29999.00");
         assertThat(response.active()).isTrue();
-
-        // DB'de gerçekten var mı?
         assertThat(productRepository.findById(response.id())).isPresent();
     }
 
@@ -134,10 +107,6 @@ class ProductServiceIntegrationTest {
 
         assertThat(productRepository.count()).isEqualTo(2);
     }
-
-    // =========================================================
-    // GET
-    // =========================================================
 
     @Test
     @DisplayName("Mevcut ürün getirilince doğru veriler döner")
@@ -160,10 +129,6 @@ class ProductServiceIntegrationTest {
         assertThatThrownBy(() -> productService.getProduct(999_999L, "tr"))
                 .isInstanceOf(ProductNotFoundException.class);
     }
-
-    // =========================================================
-    // LIST / FILTER
-    // =========================================================
 
     @Test
     @DisplayName("Kategori filtresi uygulandığında yalnızca o kategori döner")
@@ -200,7 +165,6 @@ class ProductServiceIntegrationTest {
                 "Elektronik", "Samsung", new BigDecimal("12000.00"),
                 "tr", "Galaxy A55", "Orta segment"));
 
-        // 1000 - 20000 TL arası filtresi
         ProductFilterRequest filter = new ProductFilterRequest(
                 null, null, new BigDecimal("1000"), new BigDecimal("20000"));
         Page<ProductResponse> result = productService.listProducts(
@@ -211,10 +175,6 @@ class ProductServiceIntegrationTest {
                 assertThat(p.basePrice()).isBetween(new BigDecimal("1000"), new BigDecimal("20000"))
         );
     }
-
-    // =========================================================
-    // UPDATE
-    // =========================================================
 
     @Test
     @DisplayName("Ürün güncellenince değişiklikler DB'ye yansır")
@@ -228,17 +188,12 @@ class ProductServiceIntegrationTest {
         );
         productService.updateProduct(created.id(), updateRequest);
 
-        // Flush + re-fetch from DB (same transaction — EntityManager has the updated entity)
         ProductResponse updated = productService.getProduct(created.id(), "tr");
 
         assertThat(updated.category()).isEqualTo("Televizyon");
         assertThat(updated.basePrice()).isEqualByComparingTo("10500.00");
-        assertThat(updated.brand()).isEqualTo("LG"); // değişmemeli
+        assertThat(updated.brand()).isEqualTo("LG");
     }
-
-    // =========================================================
-    // DELETE
-    // =========================================================
 
     @Test
     @DisplayName("Ürün silinince DB'den kalkar")
@@ -260,10 +215,6 @@ class ProductServiceIntegrationTest {
         assertThatThrownBy(() -> productService.deleteProduct(999_999L))
                 .isInstanceOf(ProductNotFoundException.class);
     }
-
-    // =========================================================
-    // YARDIMCI METODLAR
-    // =========================================================
 
     private CreateProductRequest buildCreateRequest(String category, String brand,
                                                     BigDecimal price, String lang,

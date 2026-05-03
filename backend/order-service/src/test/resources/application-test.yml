@@ -1,11 +1,3 @@
-# =====================================================
-# ORDER SERVICE — Test Profili
-# =====================================================
-# Config Server, Eureka devre dışı.
-# JwtDecoder mock bean ile, Iyzico mock payment ile çalışır.
-# Datasource + RabbitMQ → @DynamicPropertySource + Testcontainers ile override.
-# CardCacheService → @MockitoBean ile mock'lanır (Redis Testcontainer gerekmez).
-
 spring:
   cloud:
     config:
@@ -17,7 +9,6 @@ eureka:
   client:
     enabled: false
 
-# Mock ödeme — Iyzico'ya gerçek HTTP çağrısı gitmez
 payment:
   mock: true
 
@@ -26,12 +17,10 @@ iyzico:
   secret-key: test-secret-key
   base-url: https://sandbox-api.iyzipay.com
 
-# Outbox publisher test sırasında otomatik çalışmasın
 outbox:
   publisher:
     fixed-delay-ms: 999999999
 
-# Config Server'dan gelen saga rabbit değerlerini burada tanımlıyoruz
 saga:
   rabbit:
     exchange: order.saga.exchange
