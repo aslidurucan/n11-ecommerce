@@ -1,0 +1,65 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: chat-service
+  config:
+    import: optional:configserver:http://${CONFIG_SERVER_HOST:localhost}:8762
+  cloud:
+    config:
+      fail-fast: false
+      retry:
+        max-attempts: 3
+        max-interval: 5000
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=100,expireAfterWrite=10m
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+# Groq LLM
+groq:
+  api-key: ${GROQ_API_KEY:}
+  model: llama-3.1-8b-instant
+
+# Product service Feign client
+product-service:
+  url: http://product-service
+
+# Logging
+logging:
+  level:
+    com.n11bootcamp.chat: DEBUG
+    org.springframework.cloud.openfeign: INFO
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# Swagger
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
