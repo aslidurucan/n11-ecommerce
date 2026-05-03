@@ -114,6 +114,8 @@ app:
       - "/v3/api-docs/**"
       - "/swagger-ui/**"
       - "/swagger-ui.html"
+      - "/ws/**"
+      - "/api/v1/chat/**"
     public-get-paths:
       - "/api/products/**"
       - "/api/categories/**"

@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
     "@tanstack/react-query": "^5.100.6",
     "axios": "^1.7.9",
     "clsx": "^2.1.1",
@@ -19,6 +20,7 @@
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.28.0",
+    "sockjs-client": "^1.6.1",
     "tailwind-merge": "^2.5.4",
     "uuid": "^11.0.0",
     "zustand": "^5.0.0"
@@ -27,6 +29,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@types/sockjs-client": "^1.5.4",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",

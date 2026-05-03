@@ -4,6 +4,10 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // SockJS Node.js icin yazilmis, 'global' icin window'u kullan
+    global: 'globalThis',
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -16,7 +20,13 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
-      // Keycloak istekleri proxy'den geçer → CORS sorunu olmaz
+      // WebSocket — notification-service /topic/orders icin
+      '/ws': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        ws: true,
+      },
+      // Keycloak istekleri proxy'den gecer -> CORS sorunu olmaz
       '/keycloak': {
         target: 'http://localhost:8090',
         changeOrigin: true,
