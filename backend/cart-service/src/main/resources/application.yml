@@ -1,0 +1,47 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: cart-service
+  config:
+    import: optional:configserver:${CONFIG_URI:http://localhost:8762}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}
+          jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}/protocol/openid-connect/certs
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+feign:
+  circuitbreaker:
+    enabled: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      product-service:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+app:
+  exception:
+    verbose: ${EXCEPTION_VERBOSE:false}

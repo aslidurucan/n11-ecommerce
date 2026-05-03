@@ -1,0 +1,18 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+  cache:
+    type: none
+  jpa:
+    show-sql: true
+
+eureka:
+  client:
+    enabled: false
+
+logging:
+  level:
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
+    org.springframework.security: WARN

@@ -1,0 +1,327 @@
+{
+  "info": {
+    "name": "n11 E-Commerce API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8084"
+    },
+    {
+      "key": "stock_url",
+      "value": "http://localhost:8085"
+    },
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "user_id",
+      "value": "user-test-uuid-001"
+    },
+    {
+      "key": "username",
+      "value": "testuser"
+    },
+    {
+      "key": "jwt_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "🏥 Health Checks",
+      "item": [
+        {
+          "name": "Order Service Health",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/actuator/health"
+          }
+        },
+        {
+          "name": "Stock Service Health",
+          "request": {
+            "method": "GET",
+            "url": "{{stock_url}}/actuator/health"
+          }
+        },
+        {
+          "name": "Eureka Health",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8761/actuator/health"
+          }
+        },
+        {
+          "name": "Config Server Health",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8762/actuator/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📦 Stock - Admin",
+      "item": [
+        {
+          "name": "Get Stock (ürün 1)",
+          "request": {
+            "method": "GET",
+            "url": "{{stock_url}}/api/stocks/1"
+          }
+        },
+        {
+          "name": "Set Stock",
+          "request": {
+            "method": "PUT",
+            "url": "{{stock_url}}/api/stocks",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": 1,\n  \"quantity\": 50\n}"
+            }
+          }
+        },
+        {
+          "name": "Increase Stock",
+          "request": {
+            "method": "PATCH",
+            "url": "{{stock_url}}/api/stocks/1/increase?delta=10"
+          }
+        },
+        {
+          "name": "Decrease Stock",
+          "request": {
+            "method": "PATCH",
+            "url": "{{stock_url}}/api/stocks/1/decrease?delta=5"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🛒 Orders",
+      "item": [
+        {
+          "name": "Create Order (Başarılı Senaryo)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/orders",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}"
+              },
+              {
+                "key": "X-User-Username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "test-order-001"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"quantity\": 2,\n      \"unitPrice\": 99.99,\n      \"productName\": \"Test Ürünü\"\n    }\n  ],\n  \"shippingAddress\": {\n    \"firstName\": \"Ahmet\",\n    \"lastName\": \"Yılmaz\",\n    \"email\": \"ahmet@test.com\",\n    \"phone\": \"+905551234567\",\n    \"address\": \"Test Caddesi No:1\",\n    \"city\": \"İstanbul\",\n    \"country\": \"Turkey\"\n  },\n  \"card\": {\n    \"holderName\": \"AHMET YILMAZ\",\n    \"number\": \"5528790000000008\",\n    \"expireMonth\": \"12\",\n    \"expireYear\": \"2030\",\n    \"cvc\": \"123\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Order (Başarısız Ödeme)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/orders",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}"
+              },
+              {
+                "key": "X-User-Username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "test-order-fail-001"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": 2,\n      \"quantity\": 1,\n      \"unitPrice\": 250.00,\n      \"productName\": \"Başka Ürün\"\n    }\n  ],\n  \"shippingAddress\": {\n    \"firstName\": \"Ahmet\",\n    \"lastName\": \"Yılmaz\",\n    \"email\": \"ahmet@test.com\",\n    \"phone\": \"+905551234567\",\n    \"address\": \"Test Caddesi No:1\",\n    \"city\": \"İstanbul\",\n    \"country\": \"Turkey\"\n  },\n  \"card\": {\n    \"holderName\": \"AHMET YILMAZ\",\n    \"number\": \"4111111111111129\",\n    \"expireMonth\": \"12\",\n    \"expireYear\": \"2030\",\n    \"cvc\": \"123\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Order (İdempotency Test)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/orders",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}"
+              },
+              {
+                "key": "X-User-Username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "test-order-001"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"quantity\": 2,\n      \"unitPrice\": 99.99,\n      \"productName\": \"Test Ürünü\"\n    }\n  ],\n  \"shippingAddress\": {\n    \"firstName\": \"Ahmet\",\n    \"lastName\": \"Yılmaz\",\n    \"email\": \"ahmet@test.com\",\n    \"phone\": \"+905551234567\",\n    \"address\": \"Test Caddesi No:1\",\n    \"city\": \"İstanbul\",\n    \"country\": \"Turkey\"\n  },\n  \"card\": {\n    \"holderName\": \"AHMET YILMAZ\",\n    \"number\": \"5528790000000008\",\n    \"expireMonth\": \"12\",\n    \"expireYear\": \"2030\",\n    \"cvc\": \"123\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/orders/1",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "My Orders (Paginated)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/orders/me?page=0&size=10",
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔐 Keycloak Auth",
+      "item": [
+        {
+          "name": "Login (testuser)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.access_token) {",
+                  "  pm.collectionVariables.set('jwt_token', res.access_token);",
+                  "  console.log('Token alındı:', res.access_token.substring(0, 50) + '...');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "http://localhost:8090/realms/ecommerce/protocol/openid-connect/token",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "new-user-service"
+                },
+                {
+                  "key": "username",
+                  "value": "testuser"
+                },
+                {
+                  "key": "password",
+                  "value": "test123"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login (admin)",
+          "request": {
+            "method": "POST",
+            "url": "http://localhost:8090/realms/ecommerce/protocol/openid-connect/token",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "new-user-service"
+                },
+                {
+                  "key": "username",
+                  "value": "admin"
+                },
+                {
+                  "key": "password",
+                  "value": "admin123"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

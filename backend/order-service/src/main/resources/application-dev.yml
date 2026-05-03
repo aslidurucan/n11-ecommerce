@@ -1,0 +1,7 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.security.oauth2.server.resource.BearerTokenAuthenticationToken
+
+

@@ -1,0 +1,18 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+
+eureka:
+  client:
+    enabled: false
+
+feign:
+  circuitbreaker:
+    enabled: false
+
+logging:
+  level:
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
+    org.springframework.security: WARN

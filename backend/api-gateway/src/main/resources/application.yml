@@ -1,0 +1,119 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: optional:configserver:${CONFIG_URI:http://localhost:8762}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+          lower-case-service-id: true
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "http://localhost:*"
+            allowedMethods:
+              - "*"
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+      routes:
+
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/auth/**,/api/users/**
+          filters:
+
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+
+
+        - id: product-service
+          uri: lb://PRODUCT-SERVICE
+          predicates:
+            - Path=/api/products/**,/api/categories/**
+
+
+        - id: cart-service
+          uri: lb://CART-SERVICE
+          predicates:
+            - Path=/api/cart/**
+
+
+        - id: order-service
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/api/orders/**,/api/payments/**
+
+
+        - id: stock-service
+          uri: lb://STOCK-SERVICE
+          predicates:
+            - Path=/api/stock/**
+
+        - id: notification-ws
+          uri: lb:ws://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/ws/**
+
+
+        - id: notification-rest
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/api/notifications/**
+
+
+        - id: chat-service
+          uri: lb://CHAT-SERVICE
+          predicates:
+            - Path=/api/v1/chat/**
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}
+          jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}/protocol/openid-connect/certs
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,prometheus
+  endpoint:
+    gateway:
+      access: read-only
+
+app:
+  security:
+    public-paths:
+      - "/api/auth/**"
+      - "/api/users/signup"
+      - "/actuator/**"
+      - "/eureka/**"
+      - "/v3/api-docs/**"
+      - "/swagger-ui/**"
+      - "/swagger-ui.html"
+    public-get-paths:
+      - "/api/products/**"
+      - "/api/categories/**"

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.1</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.n11bootcamp</groupId>
+    <artifactId>ecommerce-parent</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+    <name>n11 E-Commerce Microservices</name>
+    <description>Production-grade e-commerce platform with Saga, Outbox, CQRS-light, Idempotency patterns</description>
+
+    <modules>
+        <module>common-exception</module>
+        <module>eureka-server</module>
+        <module>config-server</module>
+        <module>api-gateway</module>
+        <module>user-service</module>
+        <module>product-service</module>
+        <module>cart-service</module>
+        <module>order-service</module>
+        <module>stock-service</module>
+        <module>notification-service</module>
+        <module>chat-service</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <spring-cloud.version>2024.0.0</spring-cloud.version>
+        <iyzipay.version>2.0.140</iyzipay.version>
+        <springdoc.version>2.7.0</springdoc.version>
+        <resilience4j.version>2.2.0</resilience4j.version>
+        <testcontainers.version>1.20.4</testcontainers.version>
+        <jib.version>3.4.4</jib.version>
+        <docker.image.prefix>n11ecommerce</docker.image.prefix>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.iyzipay</groupId>
+                <artifactId>iyzipay-java</artifactId>
+                <version>${iyzipay.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-spring-boot3</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- Lombok: kod kısaltma -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- Actuator: sağlık kontrolleri ve metrikler -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <!-- Test: ortak -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <excludes>
+                            <exclude>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>com.google.cloud.tools</groupId>
+                    <artifactId>jib-maven-plugin</artifactId>
+                    <version>${jib.version}</version>
+                    <configuration>
+                        <from>
+                            <image>eclipse-temurin:21-jre-alpine</image>
+                        </from>
+                        <to>
+                            <image>${docker.image.prefix}/${project.artifactId}:${project.version}</image>
+                        </to>
+                        <container>
+                            <jvmFlags>
+                                <jvmFlag>-XX:+UseContainerSupport</jvmFlag>
+                                <jvmFlag>-XX:MaxRAMPercentage=75</jvmFlag>
+                            </jvmFlags>
+                        </container>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

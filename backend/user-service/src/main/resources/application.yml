@@ -1,0 +1,48 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: user-service
+  config:
+    import: optional:configserver:${CONFIG_URI:http://localhost:8762}
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5433/userdb}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+    show-sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}
+          jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/ecommerce}/protocol/openid-connect/certs
+
+keycloak:
+  admin:
+    server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8090}
+    realm: ${KEYCLOAK_REALM:ecommerce}
+    username: ${KEYCLOAK_ADMIN_USERNAME:admin}
+    password: ${KEYCLOAK_ADMIN_PASSWORD:admin}
+    default-role: musteri
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  exception:
+    verbose: ${EXCEPTION_VERBOSE:false}
