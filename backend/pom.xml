@@ -30,6 +30,7 @@
         <module>order-service</module>
         <module>stock-service</module>
         <module>notification-service</module>
+        <module>chat-service</module>
     </modules>
 
     <properties>

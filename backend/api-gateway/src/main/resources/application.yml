@@ -28,41 +28,62 @@ spring:
             allowCredentials: true
             maxAge: 3600
       routes:
+
         - id: user-service
           uri: lb://USER-SERVICE
           predicates:
             - Path=/api/auth/**,/api/users/**
           filters:
+
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 5
                 redis-rate-limiter.burstCapacity: 10
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@ipKeyResolver}"
+
+
         - id: product-service
           uri: lb://PRODUCT-SERVICE
           predicates:
             - Path=/api/products/**,/api/categories/**
+
+
         - id: cart-service
           uri: lb://CART-SERVICE
           predicates:
             - Path=/api/cart/**
+
+
         - id: order-service
           uri: lb://ORDER-SERVICE
           predicates:
             - Path=/api/orders/**,/api/payments/**
+
+
         - id: stock-service
           uri: lb://STOCK-SERVICE
           predicates:
             - Path=/api/stock/**
+
         - id: notification-ws
           uri: lb:ws://NOTIFICATION-SERVICE
           predicates:
             - Path=/ws/**
+
+
         - id: notification-rest
           uri: lb://NOTIFICATION-SERVICE
           predicates:
             - Path=/api/notifications/**
+
+
+        - id: chat-service
+          uri: lb://CHAT-SERVICE
+          predicates:
+            - Path=/api/v1/chat/**
+
+  # Keycloak Resource Server
   security:
     oauth2:
       resourceserver:

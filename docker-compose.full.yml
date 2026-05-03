@@ -183,6 +183,24 @@ services:
     networks:
       - n11-network
 
+  # ============= CHAT SERVICE (AI-powered search via Gemini) =============
+  chat-service:
+    image: n11ecommerce/chat-service:1.0.0
+    container_name: n11-chat-service
+    ports:
+      - "8087:8087"
+    environment:
+      EUREKA_HOST: eureka-server
+      CONFIG_SERVER_HOST: config-server
+      KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/ecommerce
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - n11-network
+
   # ============= API GATEWAY =============
   api-gateway:
     image: n11ecommerce/api-gateway:1.0.0
@@ -205,6 +223,8 @@ services:
       stock-service:
         condition: service_started
       notification-service:
+        condition: service_started
+      chat-service:
         condition: service_started
     networks:
       - n11-network
