@@ -392,9 +392,9 @@ Groq çağrısı her sorguda gider (LLM doğal dil anlama için). Ancak kategori
 
 ## 🛠️ Teknoloji Stack'i
 
-**Backend:** Spring Boot 3.4 · Spring Cloud 2024 · Spring Security · Spring Data JPA · OpenFeign · Resilience4j · RabbitMQ · Redis · PostgreSQL · Keycloak · Iyzico SDK · Caffeine · Lombok · MapStruct · JUnit 5 · Mockito · Testcontainers · Springdoc OpenAPI
+**Backend:** Spring Boot 3.4 · Spring Cloud 2024 · Spring Security · Spring Data JPA · OpenFeign · Resilience4j · RabbitMQ · Redis · PostgreSQL · Keycloak · Iyzico SDK · Caffeine · Lombok · JUnit 5 · Mockito · Testcontainers · Springdoc OpenAPI
 
-**Frontend:** React 18 · TypeScript · Vite · TanStack Query · Zustand · React Router · Tailwind CSS · Lucide Icons · Axios · STOMP.js
+**Frontend:** React 18 · TypeScript · Vite · TanStack Query · Zustand · React Router · Tailwind CSS · Lucide Icons · Axios · STOMP.js · SockJS · React Hot Toast
 
 **DevOps:** Docker · Docker Compose · Jib · Nginx · GitHub Actions · Slack Webhook
 
