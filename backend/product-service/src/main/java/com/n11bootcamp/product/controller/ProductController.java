@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/products")
@@ -38,6 +39,18 @@ public class ProductController {
     private static final String DEFAULT_LANG = "tr";
 
     private final ProductService productService;
+
+    @GetMapping("/categories")
+    @Operation(summary = "Mevcut kategoriler")
+    public ResponseEntity<List<String>> getCategories() {
+        return ResponseEntity.ok(productService.getCategories());
+    }
+
+    @GetMapping("/brands")
+    @Operation(summary = "Mevcut markalar")
+    public ResponseEntity<List<String>> getBrands() {
+        return ResponseEntity.ok(productService.getBrands());
+    }
 
     @GetMapping("/{id}")
     @Operation(summary = "Ürün detayı")

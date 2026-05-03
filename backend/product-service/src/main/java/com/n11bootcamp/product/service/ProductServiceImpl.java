@@ -20,6 +20,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -37,6 +39,20 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable("categories")
+    @Transactional(readOnly = true)
+    public List<String> getCategories() {
+        return productRepository.findDistinctCategories();
+    }
+
+    @Override
+    @Cacheable("brands")
+    @Transactional(readOnly = true)
+    public List<String> getBrands() {
+        return productRepository.findDistinctBrands();
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Page<ProductResponse> listProducts(ProductFilterRequest filter,
                                                String language, Pageable pageable) {
@@ -46,6 +62,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @CacheEvict(value = {"products", "categories", "brands"}, allEntries = true)
     @Transactional
     public ProductResponse createProduct(CreateProductRequest request) {
         Product product = Product.builder()
@@ -69,7 +86,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    @CacheEvict(value = "products", allEntries = true)
+    @CacheEvict(value = {"products", "categories", "brands"}, allEntries = true)
     @Transactional
     public ProductResponse updateProduct(Long id, UpdateProductRequest request) {
         Product product = findOrThrow(id);
@@ -86,7 +103,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    @CacheEvict(value = "products", allEntries = true)
+    @CacheEvict(value = {"products", "categories", "brands"}, allEntries = true)
     @Transactional
     public void deleteProduct(Long id) {
         if (!productRepository.existsById(id)) {
